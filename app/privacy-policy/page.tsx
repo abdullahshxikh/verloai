@@ -342,6 +342,19 @@ export default function PrivacyPolicyPage() {
                             .
                         </li>
                         <li>
+                            <strong>Inworld:</strong> AI-powered character engine for
+                            interactive voice conversations and real-time dialogue. Visit{" "}
+                            <a
+                                href="https://inworld.ai/privacy-policy"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ color: "var(--text-accent)" }}
+                            >
+                                Inworld Privacy Policy
+                            </a>
+                            .
+                        </li>
+                        <li>
                             <strong>Apple App Store / Google Play Store:</strong> App
                             distribution and payment processing. See their respective privacy
                             policies.
@@ -401,10 +414,10 @@ export default function PrivacyPolicyPage() {
                     <p>
                         To exercise any of these rights, please contact us at{" "}
                         <a
-                            href="mailto:abdullahsjnshaikh@gmail.com"
+                            href="mailto:verloai456@gmail.com"
                             style={{ color: "var(--text-accent)", fontWeight: 600 }}
                         >
-                            abdullahsjnshaikh@gmail.com
+                            verloai456@gmail.com
                         </a>
                         . We will respond to your request within 30 days.
                     </p>
@@ -479,10 +492,10 @@ export default function PrivacyPolicyPage() {
                         If you are a parent or guardian and believe your child has provided us
                         with personal information, please contact us at{" "}
                         <a
-                            href="mailto:abdullahsjnshaikh@gmail.com"
+                            href="mailto:verloai456@gmail.com"
                             style={{ color: "var(--text-accent)", fontWeight: 600 }}
                         >
-                            abdullahsjnshaikh@gmail.com
+                            verloai456@gmail.com
                         </a>{" "}
                         so we can take appropriate action.
                     </p>
@@ -576,10 +589,10 @@ export default function PrivacyPolicyPage() {
                         <li>
                             <strong>Email:</strong>{" "}
                             <a
-                                href="mailto:abdullahsjnshaikh@gmail.com"
+                                href="mailto:verloai456@gmail.com"
                                 style={{ color: "var(--text-accent)", fontWeight: 600 }}
                             >
-                                abdullahsjnshaikh@gmail.com
+                                verloai456@gmail.com
                             </a>
                         </li>
                         <li>

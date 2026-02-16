@@ -15,7 +15,7 @@ export default function ContactPage() {
         const subject = (form.elements.namedItem("subject") as HTMLInputElement).value;
         const message = (form.elements.namedItem("message") as HTMLTextAreaElement).value;
 
-        const mailtoLink = `mailto:abdullahsjnshaikh@gmail.com?subject=${encodeURIComponent(
+        const mailtoLink = `mailto:verloai456@gmail.com?subject=${encodeURIComponent(
             subject || "Verlo AI Contact"
         )}&body=${encodeURIComponent(
             `Name: ${name}\nEmail: ${email}\n\n${message}`
@@ -46,8 +46,8 @@ export default function ContactPage() {
                         Send us an email directly and we&apos;ll respond within 24 hours.
                     </p>
                     <p>
-                        <a href="mailto:abdullahsjnshaikh@gmail.com">
-                            abdullahsjnshaikh@gmail.com
+                        <a href="mailto:verloai456@gmail.com">
+                            verloai456@gmail.com
                         </a>
                     </p>
                     <div className="contact-response-badge">
@@ -64,8 +64,8 @@ export default function ContactPage() {
                         account deletion? We take your privacy seriously.
                     </p>
                     <p>
-                        <a href="mailto:abdullahsjnshaikh@gmail.com">
-                            abdullahsjnshaikh@gmail.com
+                        <a href="mailto:verloai456@gmail.com">
+                            verloai456@gmail.com
                         </a>
                     </p>
                     <div className="contact-response-badge">
