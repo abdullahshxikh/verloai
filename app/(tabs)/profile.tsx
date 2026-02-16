@@ -1,14 +1,14 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, TextInput, Image, ActivityIndicator, Animated, Dimensions, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { User, Shield, LogOut, ChevronRight, Camera, X, Crown, Settings, Flame, Target, Trophy, TrendingUp, HelpCircle, UserCircle, Mail, RotateCcw, Trash2, CreditCard, Receipt, FileText } from 'lucide-react-native';
+import { User, Shield, LogOut, ChevronRight, Camera, X, Crown, Flame, Target, Trophy, TrendingUp, UserCircle, Mail, Heart } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Svg, { Path, Defs, LinearGradient as SvgLinearGradient, Stop, Circle, Line } from 'react-native-svg';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import { useAuth } from '../../lib/AuthProvider';
-import { useOnboarding } from '../../lib/OnboardingProvider';
 import { useProgress } from '../../lib/ProgressProvider';
 import { useRevenueCat } from '../../lib/RevenueCatProvider';
 
@@ -20,14 +20,14 @@ const GRAPH_HEIGHT = isSmall ? 130 : 160;
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const { resetOnboarding } = useOnboarding();
-  const { streak, xp, charismaScore, completedLevels, avatarUrl, fullName, updateProfile, charismaHistory, loadCharismaHistory } = useProgress();
-  const { isProMember, showCustomerCenter, customerInfo } = useRevenueCat();
+  const { streak, xp, charismaScore, completedLevels, avatarUrl, fullName, updateProfile, charismaHistory, loadCharismaHistory, datingAvatarPreference, updateDatingPreference } = useProgress();
+  const { isProMember } = useRevenueCat();
 
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(fullName || '');
   const [isLoading, setIsLoading] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
+  const [editGender, setEditGender] = useState<string | null>(null);
+  const [editDatingPref, setEditDatingPref] = useState<'men' | 'women' | 'auto' | null>(null);
 
   // Animation
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -96,14 +96,27 @@ export default function ProfileScreen() {
     return [];
   }, [charismaHistory]);
 
-  const startEditing = () => {
+  const startEditing = async () => {
     setEditName(fullName || user?.user_metadata?.full_name || '');
+    setEditDatingPref(datingAvatarPreference);
+    try {
+      const savedGender = await AsyncStorage.getItem('user_gender');
+      setEditGender(savedGender);
+    } catch {
+      setEditGender(null);
+    }
     setIsEditing(true);
   };
 
   const saveProfile = async () => {
     setIsLoading(true);
     await updateProfile({ fullName: editName });
+    if (editGender) {
+      await AsyncStorage.setItem('user_gender', editGender);
+    }
+    if (editDatingPref) {
+      await updateDatingPreference(editDatingPref);
+    }
     setIsLoading(false);
     setIsEditing(false);
   };
@@ -140,27 +153,6 @@ export default function ProfileScreen() {
         }
       }
     ]);
-  };
-
-  const handleResetOnboarding = () => {
-    Alert.alert(
-      "Reset Onboarding",
-      "This will clear onboarding state and restart the app flow.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Reset", style: "destructive", onPress: async () => {
-            try {
-              await resetOnboarding();
-              if (user) await signOut();
-              router.replace('/');
-            } catch (error) {
-              console.error('Error resetting onboarding:', error);
-            }
-          }
-        }
-      ]
-    );
   };
 
   const displayName = fullName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Guest User';
@@ -313,78 +305,6 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Billing Section - Pro Members Only */}
-        {isProMember && (
-          <View style={styles.billingSection}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.sectionTitleContainer}>
-                <CreditCard size={18} color={COLORS.primary} />
-                <Text style={styles.sectionTitle}>Billing</Text>
-              </View>
-            </View>
-            <View style={styles.billingCard}>
-              <LinearGradient
-                colors={['rgba(108, 92, 231, 0.08)', 'rgba(108, 92, 231, 0.02)']}
-                style={StyleSheet.absoluteFill}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              />
-
-              {/* Current Plan */}
-              <View style={styles.billingRow}>
-                <View style={styles.billingLeft}>
-                  <View style={[styles.billingIcon, { backgroundColor: 'rgba(255, 215, 0, 0.15)' }]}>
-                    <Crown size={16} color="#FFD700" />
-                  </View>
-                  <View>
-                    <Text style={styles.billingLabel}>Current Plan</Text>
-                    <Text style={styles.billingValue}>Verlo AI Pro</Text>
-                  </View>
-                </View>
-                <View style={styles.activeBadge}>
-                  <Text style={styles.activeBadgeText}>Active</Text>
-                </View>
-              </View>
-
-              <View style={styles.billingDivider} />
-
-              {/* Renewal Date */}
-              {customerInfo?.entitlements?.active?.['Verlo ai Pro']?.expirationDate && (
-                <>
-                  <View style={styles.billingRow}>
-                    <View style={styles.billingLeft}>
-                      <View style={[styles.billingIcon, { backgroundColor: 'rgba(0, 206, 201, 0.15)' }]}>
-                        <Receipt size={16} color={COLORS.accent} />
-                      </View>
-                      <View>
-                        <Text style={styles.billingLabel}>Next Renewal</Text>
-                        <Text style={styles.billingValue}>
-                          {new Date(customerInfo.entitlements.active['Verlo ai Pro'].expirationDate!).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                        </Text>
-                      </View>
-                    </View>
-                  </View>
-                  <View style={styles.billingDivider} />
-                </>
-              )}
-
-              {/* Manage Subscription */}
-              <TouchableOpacity style={styles.billingRow} onPress={() => showCustomerCenter()}>
-                <View style={styles.billingLeft}>
-                  <View style={[styles.billingIcon, { backgroundColor: 'rgba(108, 92, 231, 0.15)' }]}>
-                    <FileText size={16} color={COLORS.primary} />
-                  </View>
-                  <View>
-                    <Text style={styles.billingLabel}>Manage Subscription</Text>
-                    <Text style={styles.billingSubtext}>Change plan, cancel, or update payment</Text>
-                  </View>
-                </View>
-                <ChevronRight size={18} color={COLORS.textDim} />
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
         {/* Charisma Growth Graph - At Bottom, ONLY real data */}
         {graphPath && (
           <View style={styles.section}>
@@ -488,14 +408,6 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* Danger Zone */}
-        <View style={styles.dangerZone}>
-          <TouchableOpacity style={styles.dangerRow} onPress={handleResetOnboarding}>
-            <RotateCcw size={18} color={COLORS.textDim} />
-            <Text style={styles.dangerText}>Reset Onboarding</Text>
-          </TouchableOpacity>
-        </View>
-
         {/* Logout Button */}
         {user ? (
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -519,7 +431,7 @@ export default function ProfileScreen() {
       {/* Edit Name Modal */}
       <Modal visible={isEditing} transparent animationType="fade">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <ScrollView style={styles.modalContent} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Edit Profile</Text>
               <TouchableOpacity onPress={() => setIsEditing(false)} style={styles.modalCloseButton}>
@@ -536,6 +448,37 @@ export default function ProfileScreen() {
               placeholderTextColor={COLORS.textDim}
               autoFocus
             />
+
+            <Text style={styles.inputLabel}>Gender</Text>
+            <View style={styles.optionGroup}>
+              {['Woman', 'Man', 'Non-binary', 'Prefer not to say'].map((g) => (
+                <TouchableOpacity
+                  key={g}
+                  style={[styles.optionButton, editGender === g && styles.optionButtonActive]}
+                  onPress={() => setEditGender(g)}
+                >
+                  <Text style={[styles.optionText, editGender === g && styles.optionTextActive]}>{g}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.inputLabel}>Dating Preference</Text>
+            <View style={styles.optionGroup}>
+              <TouchableOpacity
+                style={[styles.optionButton, editDatingPref === 'women' && styles.optionButtonActive]}
+                onPress={() => setEditDatingPref('women')}
+              >
+                <Heart size={14} color={editDatingPref === 'women' ? COLORS.text : COLORS.textDim} />
+                <Text style={[styles.optionText, editDatingPref === 'women' && styles.optionTextActive]}>Practice with Women</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.optionButton, editDatingPref === 'men' && styles.optionButtonActive]}
+                onPress={() => setEditDatingPref('men')}
+              >
+                <User size={14} color={editDatingPref === 'men' ? COLORS.text : COLORS.textDim} />
+                <Text style={[styles.optionText, editDatingPref === 'men' && styles.optionTextActive]}>Practice with Men</Text>
+              </TouchableOpacity>
+            </View>
 
             <TouchableOpacity
               style={styles.saveButton}
@@ -554,7 +497,7 @@ export default function ProfileScreen() {
                 <Text style={styles.saveButtonText}>Save Changes</Text>
               )}
             </TouchableOpacity>
-          </View>
+          </ScrollView>
         </View>
       </Modal>
 
@@ -740,70 +683,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surfaceLight,
     marginHorizontal: SPACING.m,
   },
-  billingSection: {
-    paddingHorizontal: SPACING.l,
-    marginBottom: SPACING.xl,
-  },
-  billingCard: {
-    borderRadius: 20,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(108, 92, 231, 0.15)',
-    padding: 4,
-  },
-  billingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 14,
-    paddingHorizontal: SPACING.m,
-  },
-  billingLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    flex: 1,
-  },
-  billingIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  billingLabel: {
-    fontSize: 13,
-    fontFamily: FONTS.bodyMedium,
-    color: COLORS.textDim,
-  },
-  billingValue: {
-    fontSize: 15,
-    fontFamily: FONTS.bodyBold,
-    color: COLORS.text,
-    marginTop: 1,
-  },
-  billingSubtext: {
-    fontSize: 12,
-    fontFamily: FONTS.body,
-    color: COLORS.textDim,
-    marginTop: 1,
-  },
-  billingDivider: {
-    height: 1,
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    marginHorizontal: SPACING.m,
-  },
-  activeBadge: {
-    backgroundColor: 'rgba(85, 239, 196, 0.15)',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  activeBadgeText: {
-    fontSize: 12,
-    fontFamily: FONTS.bodyBold,
-    color: COLORS.success,
-  },
   section: {
     paddingHorizontal: SPACING.l,
     marginBottom: SPACING.xl,
@@ -876,22 +755,6 @@ const styles = StyleSheet.create({
     color: COLORS.textDim,
     textAlign: 'center',
     lineHeight: 20,
-  },
-  dangerZone: {
-    marginHorizontal: SPACING.l,
-    marginBottom: SPACING.m,
-  },
-  dangerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    padding: SPACING.s,
-  },
-  dangerText: {
-    fontSize: 13,
-    fontFamily: FONTS.body,
-    color: COLORS.textDim,
   },
   logoutButton: {
     flexDirection: 'row',
@@ -998,5 +861,34 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 16,
     fontFamily: FONTS.bodyBold,
+  },
+  optionGroup: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 20,
+  },
+  optionButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.surfaceLight,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  optionButtonActive: {
+    borderColor: COLORS.primary,
+    backgroundColor: 'rgba(108, 92, 231, 0.15)',
+  },
+  optionText: {
+    fontSize: 13,
+    fontFamily: FONTS.bodyMedium,
+    color: COLORS.textDim,
+  },
+  optionTextActive: {
+    color: COLORS.text,
   },
 });
