@@ -281,7 +281,7 @@ export default function ProfileScreen() {
           <View style={styles.menuDivider} />
 
           {/* Contact Support */}
-          <TouchableOpacity style={styles.menuRow} onPress={() => Linking.openURL('mailto:support@verloai.com?subject=Verlo AI Support')}>
+          <TouchableOpacity style={styles.menuRow} onPress={() => Linking.openURL('https://verloai.vercel.app/contact')}>
             <View style={styles.menuLeft}>
               <View style={[styles.menuIcon, { backgroundColor: 'rgba(253, 203, 110, 0.15)' }]}>
                 <Mail size={20} color={COLORS.warning} />
