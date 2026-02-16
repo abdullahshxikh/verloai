@@ -31,7 +31,7 @@ export default function ForgotPasswordScreen() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: 'verloai://auth/reset-password',
+            redirectTo: 'verlo-ai://auth/reset-password',
         });
 
         setLoading(false);

@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, ScrollView, Image } from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState } from 'react';
@@ -11,20 +11,36 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 
 export default function SignUpScreen() {
     const router = useRouter();
-    const params = useLocalSearchParams();
     const { signUp, signInWithGoogle, signInWithApple } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
 
     const handleSignUp = async () => {
-        if (!email || !password) {
-            Alert.alert('Error', 'Please enter both email and password');
+        if (!email) {
+            Alert.alert('Error', 'Please enter your email address');
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            Alert.alert('Error', 'Please enter a valid email address');
+            return;
+        }
+
+        if (!password) {
+            Alert.alert('Error', 'Please enter a password');
             return;
         }
 
         if (password.length < 6) {
             Alert.alert('Error', 'Password must be at least 6 characters');
+            return;
+        }
+
+        if (password !== confirmPassword) {
+            Alert.alert('Error', 'Passwords do not match');
             return;
         }
 
@@ -36,21 +52,14 @@ export default function SignUpScreen() {
         setLoading(false);
 
         if (error) {
-            Alert.alert('Sign Up Failed', error.message);
+            Alert.alert('Sign Up Error', error.message);
         } else {
-            // Auto login logic usually happens inside useAuth or Supabase automatically for email/pass if we turned off email confirmation.
-            // But if confirmation is ON, we need to tell them.
-            // Assuming for now confirmation is OFF or handled.
-
-            // Actually, if confirmation is OFF (typical for dev), session is set.
-            // If session is set, _layout will redirect to Paywall because onboarding is incomplete.
-
-            // So we can just wait or manually replace.
-            // Let's manually replace to be safe.
-            router.replace({
-                pathname: '/paywall',
-                params: params as any // Types might be tricky with useLocalSearchParams, so casting to any or Record<string, string> is safer generally
-            });
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            Alert.alert(
+                'Account Created',
+                'Your account has been created successfully. You can now sign in.',
+                [{ text: 'OK', onPress: () => router.replace('/auth/signin') }]
+            );
         }
     };
 
@@ -95,6 +104,20 @@ export default function SignUpScreen() {
                                 placeholderTextColor={COLORS.textDim}
                                 value={password}
                                 onChangeText={setPassword}
+                                secureTextEntry
+                                autoCapitalize="none"
+                                autoComplete="password-new"
+                            />
+                        </View>
+
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.label}>Confirm Password</Text>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Re-enter your password"
+                                placeholderTextColor={COLORS.textDim}
+                                value={confirmPassword}
+                                onChangeText={setConfirmPassword}
                                 secureTextEntry
                                 autoCapitalize="none"
                                 autoComplete="password-new"
@@ -165,7 +188,7 @@ export default function SignUpScreen() {
                             style={styles.linkButton}
                             onPress={() => router.replace('/auth/signin')}
                         >
-                            <Text style={styles.createAccountText}>Already have an account? Sign In</Text>
+                            <Text style={styles.linkText}>Already have an account? <Text style={styles.linkHighlight}>Sign In</Text></Text>
                         </TouchableOpacity>
                     </Animated.View>
                 </KeyboardAvoidingView>
@@ -214,7 +237,7 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     inputContainer: {
-        marginBottom: SPACING.l,
+        marginBottom: SPACING.m,
     },
     label: {
         fontSize: 14,
@@ -248,15 +271,6 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: FONTS.bodyBold,
     },
-    linkButton: {
-        marginTop: SPACING.xxl,
-        alignItems: 'center',
-    },
-    createAccountText: {
-        fontSize: 16,
-        color: COLORS.textDim,
-        fontFamily: FONTS.bodyBold,
-    },
     separatorContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -276,19 +290,31 @@ const styles = StyleSheet.create({
     socialButtons: {
         gap: 12,
         marginBottom: SPACING.m,
+        alignItems: 'center',
     },
     googleButtonWrapper: {
-        width: '100%',
         alignItems: 'center',
         justifyContent: 'center',
     },
     googleImageButton: {
-        width: '100%',
+        width: 226,
         height: 50,
     },
     appleButton: {
-        width: '70%',
+        width: 226,
         height: 50,
-        alignSelf: 'center',
+    },
+    linkButton: {
+        marginTop: SPACING.l,
+        alignItems: 'center',
+    },
+    linkText: {
+        fontSize: 15,
+        color: COLORS.textDim,
+        fontFamily: FONTS.body,
+    },
+    linkHighlight: {
+        color: COLORS.primary,
+        fontFamily: FONTS.bodyBold,
     },
 });

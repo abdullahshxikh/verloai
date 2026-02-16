@@ -17,8 +17,19 @@ export default function SignInScreen() {
     const [loading, setLoading] = useState(false);
 
     const handleSignIn = async () => {
-        if (!email || !password) {
-            Alert.alert('Error', 'Please enter both email and password');
+        if (!email) {
+            Alert.alert('Error', 'Please enter your email address');
+            return;
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            Alert.alert('Error', 'Please enter a valid email address');
+            return;
+        }
+
+        if (!password) {
+            Alert.alert('Error', 'Please enter your password');
             return;
         }
 
@@ -30,7 +41,9 @@ export default function SignInScreen() {
         setLoading(false);
 
         if (error) {
-            Alert.alert('Sign In Failed', error.message);
+            Alert.alert('Sign In Error', error.message);
+        } else {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         }
     };
 
@@ -152,7 +165,7 @@ export default function SignInScreen() {
                             style={styles.linkButton}
                             onPress={() => router.replace('/auth/signup')}
                         >
-                            <Text style={styles.createAccountText}>Don't have an account? Sign Up</Text>
+                            <Text style={styles.linkText}>Don't have an account? <Text style={styles.linkHighlight}>Sign Up</Text></Text>
                         </TouchableOpacity>
                     </Animated.View>
                 </KeyboardAvoidingView>
@@ -201,7 +214,7 @@ const styles = StyleSheet.create({
         width: '100%',
     },
     inputContainer: {
-        marginBottom: SPACING.l,
+        marginBottom: SPACING.m,
     },
     label: {
         fontSize: 14,
@@ -226,12 +239,12 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.s,
     },
     forgotPasswordText: {
-        fontSize: 14,
-        fontFamily: FONTS.bodyMedium,
+        fontSize: 13,
+        fontFamily: FONTS.body,
         color: COLORS.primary,
     },
     buttonWrapper: {
-        marginTop: SPACING.m,
+        marginTop: SPACING.s,
         borderRadius: 12,
         overflow: 'hidden',
     },
@@ -242,15 +255,6 @@ const styles = StyleSheet.create({
     buttonText: {
         color: '#FFF',
         fontSize: 16,
-        fontFamily: FONTS.bodyBold,
-    },
-    linkButton: {
-        marginTop: SPACING.xxl,
-        alignItems: 'center',
-    },
-    createAccountText: {
-        fontSize: 16,
-        color: COLORS.textDim,
         fontFamily: FONTS.bodyBold,
     },
     separatorContainer: {
@@ -272,19 +276,31 @@ const styles = StyleSheet.create({
     socialButtons: {
         gap: 12,
         marginBottom: SPACING.m,
+        alignItems: 'center',
     },
     googleButtonWrapper: {
-        width: '100%',
         alignItems: 'center',
         justifyContent: 'center',
     },
     googleImageButton: {
-        width: '100%',
+        width: 226,
         height: 50,
     },
     appleButton: {
-        width: '70%',
+        width: 226,
         height: 50,
-        alignSelf: 'center',
+    },
+    linkButton: {
+        marginTop: SPACING.l,
+        alignItems: 'center',
+    },
+    linkText: {
+        fontSize: 15,
+        color: COLORS.textDim,
+        fontFamily: FONTS.body,
+    },
+    linkHighlight: {
+        color: COLORS.primary,
+        fontFamily: FONTS.bodyBold,
     },
 });

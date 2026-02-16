@@ -81,9 +81,7 @@ function AppGate() {
     }
 
     // If authenticated, onboarding completed, AND Pro member -> allow access to main app
-    // But allow reset-password screen to stay visible
-    const inResetPassword = segments[0] === 'auth' && (segments as string[])[1] === 'reset-password';
-    if ((segments[0] === undefined || inAuth || inPaywall) && !inResetPassword) {
+    if ((segments[0] === undefined || inAuth || inPaywall)) {
       navigate('/(tabs)');
     }
   }, [session, hasCompletedOnboarding, authLoading, onboardingLoading, rcLoading, isProMember, segments]);

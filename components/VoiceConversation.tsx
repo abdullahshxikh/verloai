@@ -35,11 +35,12 @@ interface VoiceConversationProps {
   onExit: () => void;
   onEndConversation?: (uris: string[]) => void;
   showEndButton?: boolean;
+  maxTurns?: number; // Auto-complete after this many user turns (e.g. 4 for assessments)
   avatarSource?: any; // Lottie JSON source
   voiceId?: string;
 }
 
-export default function VoiceConversation({ scenario, levelId, track, levelContext, onComplete, onExit, onEndConversation, showEndButton, avatarSource, voiceId = 'Edward' }: VoiceConversationProps) {
+export default function VoiceConversation({ scenario, levelId, track, levelContext, onComplete, onExit, onEndConversation, showEndButton, maxTurns, avatarSource, voiceId = 'Edward' }: VoiceConversationProps) {
   // 🔄 STATE MACHINE
   const [status, setStatus] = useState<ConversationState>('idle');
   const [showContext, setShowContext] = useState(!!levelContext); // Show context if exists
@@ -514,8 +515,8 @@ export default function VoiceConversation({ scenario, levelId, track, levelConte
       const basePrompt = scenario.systemPrompt || `You are ${scenario.role}. ${scenario.title}`;
       const userTurnCount = newHistory.filter(m => m.role === 'user').length;
 
-      // After enough turns, tell the AI to wrap up naturally
-      const isWrapUp = userTurnCount >= 6;
+      // Auto-wrap only if maxTurns is set (assessments). Regular levels rely on LLM or end button.
+      const isWrapUp = maxTurns ? userTurnCount >= maxTurns : false;
       const systemPrompt = isWrapUp
         ? `${basePrompt}\n\nIMPORTANT: This is the FINAL exchange. Wrap up the conversation naturally — give a closing remark, say goodbye, or end with a final thought. Keep it in character. Make it feel like a real ending, not abrupt.`
         : basePrompt;

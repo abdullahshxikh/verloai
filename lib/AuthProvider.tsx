@@ -14,8 +14,8 @@ interface AuthContextType {
     session: Session | null;
     user: User | null;
     loading: boolean;
-    signUp: (email: string, password: string) => Promise<{ error: any }>;
     signIn: (email: string, password: string) => Promise<{ error: any }>;
+    signUp: (email: string, password: string) => Promise<{ error: any }>;
     signInWithGoogle: () => Promise<{ error: any }>;
     signInWithApple: () => Promise<{ error: any }>;
     signOut: () => Promise<void>;
@@ -60,7 +60,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             }
         });
 
-        // Listen for incoming links (Deep Linking for OAuth)
+        // Listen for incoming links (Deep Linking for OAuth & Password Recovery)
         const handleDeepLink = async (event: { url: string }) => {
             if (event.url) {
                 const tokens = extractSessionFromUrl(event.url);
@@ -73,6 +73,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
             }
         };
+
+        // Also check if the app was opened via a deep link (cold start)
+        Linking.getInitialURL().then((url) => {
+            if (url) handleDeepLink({ url });
+        });
         const sub = Linking.addEventListener('url', handleDeepLink);
 
         return () => {
@@ -94,16 +99,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return () => subscription.remove();
     }, []);
 
-    const signUp = async (email: string, password: string) => {
-        const { error } = await supabase.auth.signUp({
+    const signIn = async (email: string, password: string) => {
+        const { error } = await supabase.auth.signInWithPassword({
             email,
             password,
         });
         return { error };
     };
 
-    const signIn = async (email: string, password: string) => {
-        const { error } = await supabase.auth.signInWithPassword({
+    const signUp = async (email: string, password: string) => {
+        const { error } = await supabase.auth.signUp({
             email,
             password,
         });
@@ -201,7 +206,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     return (
-        <AuthContext.Provider value={{ session, user, loading, signUp, signIn, signInWithGoogle, signInWithApple, signOut }}>
+        <AuthContext.Provider value={{ session, user, loading, signIn, signUp, signInWithGoogle, signInWithApple, signOut }}>
             {children}
         </AuthContext.Provider>
     );

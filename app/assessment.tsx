@@ -58,6 +58,7 @@ export default function AssessmentScreen() {
         levelContext={assessmentLevel.context} // Pass context for the modal
         onComplete={handleComplete}
         onExit={handleExit}
+        maxTurns={4}
       />
     </View>
   );

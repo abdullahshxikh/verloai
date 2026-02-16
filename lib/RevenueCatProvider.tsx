@@ -1,5 +1,6 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Purchases, {
     CustomerInfo,
     PurchasesOffering,
@@ -12,6 +13,7 @@ import { useAuth } from './AuthProvider';
 
 const REVENUECAT_API_KEY = 'appl_ivjvUzvLKiRHPMnASBbTCWrfHVn';
 const ENTITLEMENT_ID = 'Verlo ai Pro'; // Your entitlement identifier
+const PRO_STATUS_KEY = 'user_pro_status'; // AsyncStorage key for offline cache
 
 interface RevenueCatContextType {
     customerInfo: CustomerInfo | null;
@@ -32,6 +34,14 @@ export function RevenueCatProvider({ children }: { children: React.ReactNode }) 
     const [offerings, setOfferings] = useState<PurchasesOfferings | null>(null);
     const [isProMember, setIsProMember] = useState(false);
     const [loading, setLoading] = useState(true);
+    const isConfigured = useRef(false);
+
+    // Load cached pro status on mount (before SDK is ready)
+    useEffect(() => {
+        AsyncStorage.getItem(PRO_STATUS_KEY).then((val) => {
+            if (val === 'true') setIsProMember(true);
+        });
+    }, []);
 
     // Initialize RevenueCat SDK
     useEffect(() => {
@@ -42,13 +52,23 @@ export function RevenueCatProvider({ children }: { children: React.ReactNode }) 
                     Purchases.setLogLevel(LOG_LEVEL.DEBUG);
                 }
 
-                // Configure SDK
-                Purchases.configure({
-                    apiKey: REVENUECAT_API_KEY,
-                    appUserID: user?.id, // Optional: Set user ID for cross-platform tracking
-                });
-
-                console.log('✅ RevenueCat initialized successfully');
+                if (!isConfigured.current) {
+                    // Configure SDK only once
+                    Purchases.configure({
+                        apiKey: REVENUECAT_API_KEY,
+                        appUserID: user?.id,
+                    });
+                    isConfigured.current = true;
+                    console.log('✅ RevenueCat initialized successfully');
+                } else if (user?.id) {
+                    // If already configured but user changed, log in with new user ID
+                    try {
+                        await Purchases.logIn(user.id);
+                        console.log('✅ RevenueCat logged in as:', user.id);
+                    } catch (loginErr) {
+                        console.warn('RevenueCat login error (non-fatal):', loginErr);
+                    }
+                }
 
                 // Load initial customer info and offerings
                 await Promise.all([
@@ -68,11 +88,11 @@ export function RevenueCatProvider({ children }: { children: React.ReactNode }) 
     // Listen for customer info updates
     useEffect(() => {
         Purchases.addCustomerInfoUpdateListener((info) => {
-            console.log('📱 Customer info updated:', info);
+            console.log('📱 Customer info updated');
             setCustomerInfo(info);
             updateProStatus(info);
         });
-        // Note: RevenueCat SDK manages listener cleanup automatically
+        // RevenueCat SDK manages listener lifecycle internally
     }, []);
 
     // Load customer info
@@ -102,10 +122,11 @@ export function RevenueCatProvider({ children }: { children: React.ReactNode }) 
         }
     };
 
-    // Update pro membership status
+    // Update pro membership status and persist to AsyncStorage
     const updateProStatus = (info: CustomerInfo) => {
         const isPro = typeof info.entitlements.active[ENTITLEMENT_ID] !== 'undefined';
         setIsProMember(isPro);
+        AsyncStorage.setItem(PRO_STATUS_KEY, isPro ? 'true' : 'false').catch(() => {});
         console.log(`🔐 Pro status: ${isPro ? 'Active' : 'Inactive'}`);
     };
 
