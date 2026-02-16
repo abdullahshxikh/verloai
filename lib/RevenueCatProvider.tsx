@@ -10,7 +10,7 @@ import Purchases, {
 import { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import { useAuth } from './AuthProvider';
 
-const REVENUECAT_API_KEY = process.env.EXPO_PUBLIC_REVENUECAT_API_KEY || '';
+const REVENUECAT_API_KEY = 'appl_ivjvUzvLKiRHPMnASBbTCWrfHVn';
 const ENTITLEMENT_ID = 'Verlo ai Pro'; // Your entitlement identifier
 
 interface RevenueCatContextType {
