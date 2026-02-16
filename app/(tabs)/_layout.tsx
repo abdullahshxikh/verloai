@@ -1,8 +1,8 @@
 import { Tabs } from 'expo-router';
-import { View, StyleSheet } from 'react-native';
-import { Home, Mic2, Zap, User, LayoutGrid } from 'lucide-react-native';
+import { Home, User, Sparkles } from 'lucide-react-native';
 import { COLORS, FONTS } from '../../constants/theme';
-import { BlurView } from 'expo-blur';
+import { View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 export default function TabLayout() {
   return (
@@ -10,18 +10,22 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#1a1a2e',
-          borderTopColor: 'rgba(255,255,255,0.05)',
-          height: 80,
-          paddingBottom: 20,
-          paddingTop: 10,
+          backgroundColor: COLORS.surface,
+          borderTopColor: 'rgba(255,255,255,0.08)',
+          borderTopWidth: 1,
+          height: 85,
+          paddingBottom: 24,
+          paddingTop: 12,
+          elevation: 0,
+          shadowOpacity: 0,
         },
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.textDim,
         tabBarLabelStyle: {
           fontFamily: FONTS.bodyMedium,
-          fontSize: 10,
+          fontSize: 11,
           marginTop: 4,
+          letterSpacing: 0.2,
         },
       }}
     >
@@ -29,28 +33,30 @@ export default function TabLayout() {
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ color, size }) => (
-            <Home size={size} color={color} />
-          ),
-        }}
-      />
-      
-      <Tabs.Screen
-        name="freestyle"
-        options={{
-          title: 'Freestyle',
-          tabBarIcon: ({ color, size }) => (
-            <LayoutGrid size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{
+              padding: 8,
+              borderRadius: 12,
+              backgroundColor: focused ? 'rgba(108, 92, 231, 0.15)' : 'transparent',
+            }}>
+              <Home size={22} color={color} strokeWidth={focused ? 2.5 : 2} />
+            </View>
           ),
         }}
       />
 
       <Tabs.Screen
-        name="practice"
+        name="freestyle"
         options={{
-          title: 'Practice',
-          tabBarIcon: ({ color, size }) => (
-            <Zap size={size} color={color} />
+          title: 'Freestyle',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{
+              padding: 8,
+              borderRadius: 12,
+              backgroundColor: focused ? 'rgba(108, 92, 231, 0.15)' : 'transparent',
+            }}>
+              <Sparkles size={22} color={color} strokeWidth={focused ? 2.5 : 2} />
+            </View>
           ),
         }}
       />
@@ -59,9 +65,29 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ color, size }) => (
-            <User size={size} color={color} />
+          tabBarIcon: ({ color, focused }) => (
+            <View style={{
+              padding: 8,
+              borderRadius: 12,
+              backgroundColor: focused ? 'rgba(108, 92, 231, 0.15)' : 'transparent',
+            }}>
+              <User size={22} color={color} strokeWidth={focused ? 2.5 : 2} />
+            </View>
           ),
+        }}
+      />
+
+      {/* Hidden tabs */}
+      <Tabs.Screen
+        name="practice"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="rizz"
+        options={{
+          href: null,
         }}
       />
     </Tabs>

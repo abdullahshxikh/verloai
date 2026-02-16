@@ -1,12 +1,14 @@
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useEffect, useState } from 'react';
 import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInUp, useSharedValue, useAnimatedStyle, useAnimatedProps, withRepeat, withTiming, Easing, withSpring } from 'react-native-reanimated';
-import { GroqService } from '../services/groq';
+import { InworldService } from '../services/inworld';
 import { COLORS, FONTS, SPACING } from '../constants/theme';
 import { useProgress } from '../lib/ProgressProvider';
+import { useAuth } from '../lib/AuthProvider';
+import { supabase } from '../lib/supabase';
 import * as Haptics from 'expo-haptics';
 import Svg, { Circle } from 'react-native-svg';
 
@@ -22,6 +24,7 @@ export default function ProcessingScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { charismaScore, updateCharismaScore } = useProgress();
+  const { user } = useAuth();
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState("Analyzing acoustics...");
 
@@ -49,14 +52,38 @@ export default function ProcessingScreen() {
       } else {
         // Real processing
         const uris = JSON.parse(params.uris as string);
-        // Only process first audio for now or merge
         if (uris.length > 0) {
-          const transcripts = await Promise.all(uris.map((u: string) => GroqService.transcribeAudio(u)));
-          // @ts-ignore: charismaScore might be ignored by analyzeAssessment but good to pass if needed
-          analysis = await GroqService.analyzeAssessment(transcripts, charismaScore);
+          const allTranscripts = await Promise.all(uris.map((u: string) => InworldService.transcribeAudio(u)));
+          const transcripts = allTranscripts.filter(t => t && t.trim().length > 0);
+
+          if (transcripts.length === 0) {
+            throw new Error("No audible speech detected. Please speak more clearly.");
+          }
+
+          analysis = await InworldService.analyzeAssessment(transcripts, charismaScore);
 
           if (analysis.charismaScore) {
             await updateCharismaScore(analysis.charismaScore);
+
+            // Save detailed session score to Supabase
+            if (user) {
+              const isFreestyle = !params.levelId || params.levelId === '';
+              const isAssessment = params.levelId === '0' || (params.levelId as string)?.startsWith('assessment-');
+              supabase.rpc('save_session_score', {
+                p_session_type: isAssessment ? 'assessment' : isFreestyle ? 'freestyle' : 'scenario',
+                p_level_id: params.levelId as string || null,
+                p_track: params.track as string || null,
+                p_difficulty: params.difficulty as string || null,
+                p_charisma_score: analysis.charismaScore,
+                p_previous_score: charismaScore,
+                p_insights: analysis.insights || [],
+                p_potential_note: analysis.potentialNote || null,
+                p_turn_count: transcripts.length,
+              }).then(({ error }) => {
+                if (error) console.warn('Session score save failed:', error.message);
+                else console.log('💾 Session score saved');
+              });
+            }
           }
         }
       }
@@ -82,6 +109,7 @@ export default function ProcessingScreen() {
       // Delay slightly at 100
       await new Promise(resolve => setTimeout(resolve, 500));
 
+      // After assessment, show results directly
       router.replace({
         pathname: '/reveal',
         params: { ...params, result: JSON.stringify(analysis) }
@@ -89,8 +117,31 @@ export default function ProcessingScreen() {
 
     } catch (err: any) {
       console.error('Processing error:', err);
-      // Fallback
-      router.back();
+
+      // Show error to user instead of silently going back
+      Alert.alert(
+        'Processing Error',
+        'There was an error analyzing your assessment. Using default results.',
+        [
+          {
+            text: 'Continue',
+            onPress: () => {
+              // Provide fallback results
+              const fallbackAnalysis = {
+                charismaScore: 50,
+                potentialNote: "We encountered an issue processing your assessment.",
+                insights: [
+                  { type: 'improvement', text: 'Technical issue', detail: 'Please try again later.' }
+                ]
+              };
+              router.replace({
+                pathname: '/reveal',
+                params: { ...params, result: JSON.stringify(fallbackAnalysis) }
+              });
+            }
+          }
+        ]
+      );
     }
   };
 

@@ -29,7 +29,7 @@ export default function ConsentScreen() {
 
       {/* Progress Indicator */}
       <View style={styles.progressContainer}>
-        <OnboardingProgress currentStep={0} totalSteps={3} />
+        <OnboardingProgress currentStep={2} totalSteps={7} />
       </View>
 
       <View style={styles.content}>

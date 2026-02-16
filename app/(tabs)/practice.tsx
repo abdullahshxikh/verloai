@@ -1,22 +1,40 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Play, Lock, CheckCircle, Sparkles } from 'lucide-react-native';
+import { Play, Lock, CheckCircle, Sparkles, Target } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import * as Haptics from 'expo-haptics';
 import { useTracks } from '../../lib/TracksProvider';
 import { LEVELS } from '../../constants/levels';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useProgress } from '../../lib/ProgressProvider';
-import { GroqService } from '../../services/groq';
+import { InworldService } from '../../services/inworld';
+import { supabase } from '../../lib/supabase';
 
 export default function PracticeScreen() {
   const router = useRouter();
   const { activeTrack } = useTracks();
   const { completedLevels } = useProgress();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isGeneratingPersonalized, setIsGeneratingPersonalized] = useState(false);
+  const [hasMemories, setHasMemories] = useState(false);
+
+  // Check if user has AI memories (enables personalized scenarios)
+  useEffect(() => {
+    const checkMemories = async () => {
+      try {
+        const { data } = await supabase.rpc('get_scenario_suggestions');
+        if (data && (data.total_memories || 0) > 0) {
+          setHasMemories(true);
+        }
+      } catch (e) {
+        // Silently fail - just won't show the personalized card
+      }
+    };
+    checkMemories();
+  }, [completedLevels]); // Re-check when levels complete (new memories may have been saved)
 
   // Filter levels for the active track, excluding assessment (order 0)
   const trackLevels = LEVELS
@@ -47,13 +65,36 @@ export default function PracticeScreen() {
     }
   };
 
+  const handleGeneratePersonalized = async () => {
+    try {
+      setIsGeneratingPersonalized(true);
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+      const scenario = await InworldService.generateScenarioFromMemories(activeTrack);
+
+      if (scenario) {
+        router.push({
+          pathname: '/level/generated',
+          params: { data: JSON.stringify(scenario) }
+        });
+      } else {
+        Alert.alert("Not enough data", "Complete a few more sessions so the AI can learn your patterns.");
+      }
+    } catch (e) {
+      console.error(e);
+      Alert.alert("Error", "Failed to generate personalized scenario.");
+    } finally {
+      setIsGeneratingPersonalized(false);
+    }
+  };
+
   const handleGenerateAI = async () => {
     try {
       setIsGenerating(true);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
       const difficulty = 'Advanced'; // Default for generated ones
-      const newScenario = await GroqService.generateNewScenario(activeTrack, difficulty);
+      const newScenario = await InworldService.generateNewScenario(activeTrack, difficulty);
 
       if (newScenario) {
         // Navigate to level screen with the generated data
@@ -86,6 +127,30 @@ export default function PracticeScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
+        {/* Personalized AI Scenario - shows after user has completed at least 1 session */}
+        {hasMemories && (
+          <Animated.View entering={FadeInUp.delay(100).springify()} style={styles.cardContainer}>
+            <TouchableOpacity
+              style={[styles.card, styles.personalizedCard]}
+              onPress={handleGeneratePersonalized}
+              disabled={isGeneratingPersonalized}
+            >
+              <LinearGradient
+                colors={['#e17055', '#d63031']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.aiIconBox}
+              >
+                {isGeneratingPersonalized ? <ActivityIndicator color="white" /> : <Target size={24} color="white" />}
+              </LinearGradient>
+              <View style={styles.cardContent}>
+                <Text style={[styles.cardTitle, { color: '#e17055' }]}>Recommended For You</Text>
+                <Text style={styles.cardSubtitle}>AI-crafted scenario targeting your weaknesses</Text>
+              </View>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
+
         {trackLevels.map((level, index) => {
           const unlocked = isLevelUnlocked(level.id, level.order);
           const isCompleted = completedLevels.includes(level.id);
@@ -235,10 +300,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: FONTS.body,
   },
+  personalizedCard: {
+    borderColor: '#e17055',
+    borderWidth: 1.5,
+    backgroundColor: '#3d2020',
+  },
   aiCard: {
     borderColor: '#6c5ce7',
     borderWidth: 1.5,
-    backgroundColor: 'rgba(108, 92, 231, 0.1)',
+    backgroundColor: '#352b5e',
   },
   aiIconBox: {
     width: 48,

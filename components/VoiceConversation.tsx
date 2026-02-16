@@ -6,7 +6,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Mic, Square, Volume2, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { COLORS, FONTS, SPACING } from '../constants/theme';
-import { GroqService } from '../services/groq';
+import { InworldService } from '../services/inworld';
+import { supabase } from '../lib/supabase';
 
 // 🎭 CHARACTER ANIMATION SOURCES
 // Bundled locally so it always renders (remote Lottie URLs were returning 403).
@@ -23,6 +24,8 @@ interface VoiceConversationProps {
     role: string;
     systemPrompt?: string; // Optional custom prompt
   };
+  levelId?: string; // For memory tracking
+  track?: string; // For memory tracking
   levelContext?: { // Optional context modal data
     situation: string;
     action: string;
@@ -36,22 +39,22 @@ interface VoiceConversationProps {
   voiceId?: string;
 }
 
-export default function VoiceConversation({ scenario, levelContext, onComplete, onExit, onEndConversation, showEndButton, avatarSource, voiceId = 'daniel' }: VoiceConversationProps) {
+export default function VoiceConversation({ scenario, levelId, track, levelContext, onComplete, onExit, onEndConversation, showEndButton, avatarSource, voiceId = 'Edward' }: VoiceConversationProps) {
   // 🔄 STATE MACHINE
   const [status, setStatus] = useState<ConversationState>('idle');
   const [showContext, setShowContext] = useState(!!levelContext); // Show context if exists
   const [history, setHistory] = useState<{ role: 'user' | 'assistant'; content: string }[]>([]);
   const [recordedUris, setRecordedUris] = useState<string[]>([]);
-
   // 🎙️ AUDIO REFS
   const recordingRef = useRef<Audio.Recording | null>(null);
   const isPressedRef = useRef(false); // Track button press state
   const [permissionResponse, requestPermission] = Audio.usePermissions();
   const [sound, setSound] = useState<Audio.Sound | null>(null);
+  const soundRef = useRef<Audio.Sound | null>(null); // Always-current ref for cleanup on exit
 
   // Track loading/playing state immediately to prevent races
-  // const soundRef = useRef<Audio.Sound | null>(null); // REMOVED: Too complex
   const hasStarted = useRef(false);
+  const isExiting = useRef(false); // Flag to abort in-flight TTS
 
   // Mutex lock to prevent overlapping playback requests
   const playbackLock = useRef(false);
@@ -70,32 +73,58 @@ export default function VoiceConversation({ scenario, levelContext, onComplete, 
     }
   }, [showContext]);
 
-  // Cleanup on unmount
+  // Cleanup on unmount AND when navigating away
   useEffect(() => {
     return () => {
+      console.log('🧹 VoiceConversation unmounting - cleaning up audio');
+      isExiting.current = true;
       cleanupAudio();
+      // Force stop any ongoing playback
+      playbackLock.current = false;
+      recordingLock.current = false;
+      hasStarted.current = false;
     };
   }, []);
 
   // 🎭 LOTTIE CONTROL: Now controlled directly in speak() function
   // Removed automatic status-based animation to prevent desync
 
-  // 🧹 CLEANUP
+  // 🧹 CLEANUP - uses soundRef so it always has the current sound
   const cleanupAudio = async () => {
+    console.log('🧹 Cleaning up audio resources');
+    isExiting.current = true;
+
+    // Stop recording
     if (recordingRef.current) {
       try {
         await recordingRef.current.stopAndUnloadAsync();
-      } catch (e) { /* ignore */ }
+        recordingRef.current = null;
+      } catch (e) {
+        console.warn('Error stopping recording:', e);
+      }
     }
-    if (sound) {
+
+    // Stop and unload sound via ref (state may be stale during unmount)
+    const currentSound = soundRef.current;
+    if (currentSound) {
       try {
-        await sound.stopAsync(); // Ensure it stops playing
-        await sound.unloadAsync();
-      } catch (e) { /* ignore */ }
+        await currentSound.stopAsync();
+        await currentSound.unloadAsync();
+      } catch (e) {
+        console.warn('Error stopping sound:', e);
+      }
+      soundRef.current = null;
+      setSound(null);
     }
-    setSound(null);
+
+    // Stop Lottie animation
+    const anim = lottieRef.current as any;
+    if (anim?.pause) anim.pause();
+    else if (anim?.reset) anim.reset();
+
+    // Release locks
     playbackLock.current = false;
-    recordingRef.current = null;
+    recordingLock.current = false;
   };
 
   // 💓 PULSE ANIMATION (Standard Animated)
@@ -120,15 +149,23 @@ export default function VoiceConversation({ scenario, levelContext, onComplete, 
 
   // 🎬 SESSION START
   const startSession = async () => {
-    if (hasStarted.current) return;
+    if (hasStarted.current) {
+      console.log('⚠️ Session already started, ignoring');
+      return;
+    }
     hasStarted.current = true;
+    console.log('🎬 Starting session');
 
     setStatus('speaking');
     setHistory([{ role: 'assistant', content: scenario.opener }]);
     await speak(scenario.opener);
   };
 
-  // 🗣️ SPEAKING FUNCTION (OpenAI TTS)
+  // ⚡ Track audio mode to avoid redundant setAudioModeAsync calls
+  const audioModeRef = useRef<'playback' | 'recording' | null>(null);
+
+  // 🗣️ SPEAKING FUNCTION (Groq TTS)
+  // ⚡ Optimized: cached audio mode, parallel TTS fetch + sound creation
   const speak = async (text: string) => {
     // 1. Lock: Prevent overlapping requests
     if (playbackLock.current) {
@@ -138,83 +175,159 @@ export default function VoiceConversation({ scenario, levelContext, onComplete, 
     playbackLock.current = true;
 
     try {
-      console.log('🗣️ Speaking:', text.substring(0, 30) + '...');
-
       // 2. Stop Previous Sound (Clean Slate)
-      if (sound) {
+      if (soundRef.current) {
         try {
-          await sound.unloadAsync();
+          await soundRef.current.unloadAsync();
         } catch (e) { /* ignore */ }
+        soundRef.current = null;
         setSound(null);
       }
 
-      // 3. CRITICAL: Reset Audio Mode Completely
-      console.log('🔧 Resetting audio mode...');
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: false,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: false,
-        shouldDuckAndroid: true,
-        playThroughEarpieceAndroid: false,
-      });
+      // 3. ⚡ Only reset audio mode if not already in playback mode
+      if (audioModeRef.current !== 'playback') {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
+        audioModeRef.current = 'playback';
+      }
 
-      // 4. Fetch Audio
-      console.log('🔄 Fetching TTS...');
-      const uri = await GroqService.generateSpeech(text, voiceId);
-      console.log('✅ TTS URI received');
+      // 4. ⚡ Fetch TTS audio (now streams directly to file — no blob/base64)
+      const uri = await InworldService.generateSpeech(text, voiceId);
 
-      // 5. Load Sound (don't auto-play yet)
-      console.log('🎵 Creating sound object...');
+      // Abort if user exited while TTS was loading
+      if (isExiting.current) return;
+
+      // 5. ⚡ Load and auto-play in one step
       const { sound: newSound } = await Audio.Sound.createAsync(
         { uri },
-        { shouldPlay: false }
+        { shouldPlay: true } // ⚡ Auto-play — saves one async call
       );
+      soundRef.current = newSound;
       setSound(newSound);
-      console.log('🎵 Sound created, starting playback...');
 
-      // 6. Start Lottie animation RIGHT before playback
+      // Abort if user exited while sound was loading
+      if (isExiting.current) {
+        try { await newSound.unloadAsync(); } catch (e) { /* ignore */ }
+        return;
+      }
+
+      // 6. Start Lottie animation
       const anim = lottieRef.current as any;
       if (anim?.play) anim.play();
 
-      // 7. Manually start playback
-      await newSound.playAsync();
-      console.log('🎵 playAsync() called');
+      // 7. Wait for finish - with timeout safety net
+      await new Promise<void>((resolve) => {
+        let resolved = false;
+        const safeResolve = () => {
+          if (!resolved) {
+            resolved = true;
+            resolve();
+          }
+        };
 
-      // 8. Wait for finish with timeout
-      const finished = await Promise.race([
-        new Promise<boolean>((resolve) => {
-          newSound.setOnPlaybackStatusUpdate((status) => {
-            if (status.isLoaded && status.didJustFinish) {
-              console.log('🏁 Playback finished normally');
-              resolve(true);
-            }
-          });
-        }),
-        new Promise<boolean>((resolve) => {
-          setTimeout(() => {
-            console.log('⏰ Playback timeout (10s)');
-            resolve(false);
-          }, 10000);
-        })
-      ]);
+        const timeout = setTimeout(() => {
+          console.warn('⏰ Playback timeout - forcing stop');
+          safeResolve();
+        }, 30000);
 
-      // 9. Stop Lottie animation immediately
-      if (anim?.pause) anim.pause();
-      else if (anim?.reset) anim.reset();
-
-      // Cleanup
-      setStatus('idle');
-      setSound(null);
-      playbackLock.current = false;
+        newSound.setOnPlaybackStatusUpdate((status) => {
+          if (!status.isLoaded) {
+            clearTimeout(timeout);
+            safeResolve();
+            return;
+          }
+          if (status.didJustFinish) {
+            clearTimeout(timeout);
+            safeResolve();
+          }
+        });
+      });
 
     } catch (error) {
       console.error('❌ Speech failed:', error);
-      // Stop animation on error
+    } finally {
+      // ALWAYS stop Lottie animation
       const anim = lottieRef.current as any;
       if (anim?.pause) anim.pause();
       else if (anim?.reset) anim.reset();
 
       setStatus('idle');
+      soundRef.current = null;
+      setSound(null);
+      playbackLock.current = false;
+    }
+  };
+
+  // 🗣️ PLAY PRE-FETCHED AUDIO (for combined LLM+TTS endpoint)
+  // ⚡ Skips TTS fetch entirely — audio is already on disk
+  const speakFromUri = async (uri: string) => {
+    if (playbackLock.current) return;
+    playbackLock.current = true;
+
+    try {
+      // Stop previous sound
+      if (soundRef.current) {
+        try { await soundRef.current.unloadAsync(); } catch (e) { /* ignore */ }
+        soundRef.current = null;
+        setSound(null);
+      }
+
+      // Set playback mode if needed
+      if (audioModeRef.current !== 'playback') {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
+        audioModeRef.current = 'playback';
+      }
+
+      if (isExiting.current) return;
+
+      // Load and auto-play
+      const { sound: newSound } = await Audio.Sound.createAsync(
+        { uri },
+        { shouldPlay: true }
+      );
+      soundRef.current = newSound;
+      setSound(newSound);
+
+      if (isExiting.current) {
+        try { await newSound.unloadAsync(); } catch (e) { /* ignore */ }
+        return;
+      }
+
+      // Start Lottie
+      const anim = lottieRef.current as any;
+      if (anim?.play) anim.play();
+
+      // Wait for finish
+      await new Promise<void>((resolve) => {
+        let resolved = false;
+        const safeResolve = () => { if (!resolved) { resolved = true; resolve(); } };
+        const timeout = setTimeout(() => safeResolve(), 30000);
+        newSound.setOnPlaybackStatusUpdate((status) => {
+          if (!status.isLoaded) { clearTimeout(timeout); safeResolve(); return; }
+          if (status.didJustFinish) { clearTimeout(timeout); safeResolve(); }
+        });
+      });
+
+    } catch (error) {
+      console.error('❌ SpeakFromUri failed:', error);
+    } finally {
+      const anim = lottieRef.current as any;
+      if (anim?.pause) anim.pause();
+      else if (anim?.reset) anim.reset();
+      setStatus('idle');
+      soundRef.current = null;
+      setSound(null);
       playbackLock.current = false;
     }
   };
@@ -234,12 +347,13 @@ export default function VoiceConversation({ scenario, levelContext, onComplete, 
       console.log('🎤 Start recording requested');
 
       // 2. Interrupt AI if speaking
-      if (sound) {
+      if (soundRef.current) {
         try {
           // Force stop audio before recording to prevent resource conflict
-          await sound.stopAsync();
-          await sound.unloadAsync();
+          await soundRef.current.stopAsync();
+          await soundRef.current.unloadAsync();
         } catch (e) { /* ignore */ }
+        soundRef.current = null;
         setSound(null);
       }
       playbackLock.current = false; // Force release playback lock
@@ -251,12 +365,16 @@ export default function VoiceConversation({ scenario, levelContext, onComplete, 
         return;
       }
 
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-        staysActiveInBackground: false,
-        shouldDuckAndroid: true,
-      });
+      // ⚡ Only switch audio mode if not already in recording mode
+      if (audioModeRef.current !== 'recording') {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+          staysActiveInBackground: false,
+          shouldDuckAndroid: true,
+        });
+        audioModeRef.current = 'recording';
+      }
 
       console.log('🎤 Creating new recording...');
 
@@ -284,9 +402,38 @@ export default function VoiceConversation({ scenario, levelContext, onComplete, 
         web: {},
       };
 
-      const { recording: newRecording } = await Audio.Recording.createAsync(
-        recordingOptions
-      );
+      let newRecording: Audio.Recording;
+      try {
+        const result = await Audio.Recording.createAsync(recordingOptions);
+        newRecording = result.recording;
+      } catch (createErr) {
+        // Retry once after fully resetting audio mode
+        console.warn('Recording create failed, retrying after mode reset...');
+        try {
+          audioModeRef.current = null;
+          // First set to playback to fully release recording resources
+          await Audio.setAudioModeAsync({
+            allowsRecordingIOS: false,
+            playsInSilentModeIOS: true,
+          });
+          // Small delay to let iOS release the audio session
+          await new Promise(r => setTimeout(r, 200));
+          // Now switch back to recording mode
+          await Audio.setAudioModeAsync({
+            allowsRecordingIOS: true,
+            playsInSilentModeIOS: true,
+            staysActiveInBackground: false,
+            shouldDuckAndroid: true,
+          });
+          audioModeRef.current = 'recording';
+          const result = await Audio.Recording.createAsync(recordingOptions);
+          newRecording = result.recording;
+        } catch (retryErr) {
+          console.error('Recording retry also failed:', retryErr);
+          setStatus('idle');
+          return;
+        }
+      }
 
       recordingRef.current = newRecording;
 
@@ -330,9 +477,18 @@ export default function VoiceConversation({ scenario, levelContext, onComplete, 
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     try {
-      await recordingRef.current.stopAndUnloadAsync();
-      const uri = recordingRef.current.getURI();
-      recordingRef.current = null;
+      const currentRecording = recordingRef.current;
+      recordingRef.current = null; // Clear ref FIRST to prevent double-stop
+
+      let uri: string | null = null;
+      try {
+        await currentRecording.stopAndUnloadAsync();
+        uri = currentRecording.getURI();
+      } catch (stopErr) {
+        console.warn('Recording stop failed (may have been cleaned up):', stopErr);
+        setStatus('idle');
+        return;
+      }
 
       if (!uri) {
         setStatus('idle');
@@ -342,28 +498,64 @@ export default function VoiceConversation({ scenario, levelContext, onComplete, 
       setRecordedUris((prev) => [...prev, uri]);
 
       // 1. Transcribe
-      const userText = await GroqService.transcribeAudio(uri);
+      const userText = await InworldService.transcribeAudio(uri);
+
+      // If audio was too short or silent, don't proceed
+      if (!userText || userText.trim().length === 0) {
+        console.log('🎤 Audio was empty or too short, ignoring');
+        setStatus('idle');
+        return;
+      }
+
       const newHistory = [...history, { role: 'user' as const, content: userText }];
       setHistory(newHistory);
 
-      // 2. Get AI Response
-      const response = await GroqService.generateChallengeResponse(newHistory, scenario.systemPrompt);
-      const aiText = response.text;
+      // 2. ⚡ Combined LLM + TTS in one server call
+      const basePrompt = scenario.systemPrompt || `You are ${scenario.role}. ${scenario.title}`;
+      const userTurnCount = newHistory.filter(m => m.role === 'user').length;
 
-      // 3. Speak AI Response
+      // After enough turns, tell the AI to wrap up naturally
+      const isWrapUp = userTurnCount >= 6;
+      const systemPrompt = isWrapUp
+        ? `${basePrompt}\n\nIMPORTANT: This is the FINAL exchange. Wrap up the conversation naturally — give a closing remark, say goodbye, or end with a final thought. Keep it in character. Make it feel like a real ending, not abrupt.`
+        : basePrompt;
+
+      const { text: aiText, audioUri } = await InworldService.generateResponseWithSpeech(
+        newHistory,
+        systemPrompt,
+        voiceId
+      );
+
+      // 3. Update UI with AI response text
       setHistory((prev) => [...prev, { role: 'assistant', content: aiText }]);
 
-      // Wait for completion logic
-      const shouldFinish = newHistory.length >= 4;
-
-      if (shouldFinish) {
-        // Speak then finish
-        await speak(aiText);
-        // Wait a bit then finish
-        setTimeout(() => onComplete([...recordedUris, uri]), 1000);
+      // Play AI response (skip if TTS failed and returned empty URI)
+      if (audioUri && audioUri.length > 0) {
+        await speakFromUri(audioUri);
       } else {
-        // Just speak
-        await speak(aiText);
+        console.warn('No audio URI, skipping playback');
+        setStatus('idle');
+      }
+
+      // After wrap-up turn, end the session
+      if (isWrapUp) {
+        // Extract and save AI memories in background (fire-and-forget)
+        if (levelId && track) {
+          const fullHistory = [...newHistory, { role: 'assistant' as const, content: aiText }];
+          InworldService.extractMemories(fullHistory, track, levelId).then(async ({ memories }) => {
+            if (memories.length > 0) {
+              try {
+                await supabase.rpc('save_ai_memories', { p_memories: JSON.stringify(memories) });
+                console.log('💾 Saved', memories.length, 'AI memories');
+              } catch (e) {
+                console.warn('Failed to save memories:', e);
+              }
+            }
+          });
+        }
+
+        // Brief pause after AI finishes speaking, then complete
+        setTimeout(() => onComplete([...recordedUris, uri]), 1500);
       }
 
     } catch (error) {
@@ -389,7 +581,7 @@ export default function VoiceConversation({ scenario, levelContext, onComplete, 
 
       {/* HEADER */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={onExit} style={styles.closeButton}>
+        <TouchableOpacity onPress={async () => { await cleanupAudio(); onExit(); }} style={styles.closeButton}>
           <X size={24} color={COLORS.textDim} />
         </TouchableOpacity>
         <Text style={styles.scenarioTitle}>{scenario.title}</Text>
@@ -499,8 +691,9 @@ export default function VoiceConversation({ scenario, levelContext, onComplete, 
         <View style={[StyleSheet.absoluteFill, styles.contextOverlay]}>
           <View style={styles.contextCard}>
             <TouchableOpacity
-              onPress={() => {
+              onPress={async () => {
                 setShowContext(false);
+                await cleanupAudio();
                 onExit();
               }}
               style={styles.contextCloseButton}

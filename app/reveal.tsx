@@ -1,12 +1,14 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image, Modal } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { AlertCircle, CheckCircle, ArrowRight, Star } from 'lucide-react-native';
+import { AlertCircle, CheckCircle, ArrowRight, Star, Trophy, Mic, Sparkles } from 'lucide-react-native';
 import Animated, { FadeInUp, FadeInDown, useSharedValue, withTiming, useAnimatedProps } from 'react-native-reanimated';
-import { useEffect } from 'react';
-import { CharismaAnalysis } from '../services/openai';
+import { useEffect, useState } from 'react';
+import * as Haptics from 'expo-haptics';
+import { CharismaAnalysis } from '../services/inworld';
 import { COLORS, FONTS, SPACING } from '../constants/theme';
+import { LEVELS, TrackType } from '../constants/levels';
 
 import { useAuth } from '../lib/AuthProvider';
 import { useProgress } from '../lib/ProgressProvider';
@@ -15,15 +17,44 @@ export default function RevealScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { session } = useAuth();
-  const { completeLevel } = useProgress();
+  const { completeLevel, completedLevels } = useProgress();
+  const [showTrackComplete, setShowTrackComplete] = useState(false);
+  const [completedTrackName, setCompletedTrackName] = useState('');
+
+  const getTrackDisplayName = (track: string) => {
+    switch (track) {
+      case 'dating': return 'Dating';
+      case 'social': return 'Social';
+      case 'professional': return 'Professional';
+      default: return 'All';
+    }
+  };
 
   const handleContinue = async () => {
     if (session) {
       // Authenticated user finishing a practice level
       if (params.levelId) {
-        // Award XP (parse from params or default to 50)
         const xpAmount = params.levelXp ? parseInt(params.levelXp as string, 10) : 50;
         await completeLevel(params.levelId as string, xpAmount);
+
+        // Check if all levels in this track are now completed
+        const track = params.track as TrackType;
+        if (track && track !== 'general') {
+          const trackLevels = LEVELS.filter(l =>
+            l.track === track &&
+            l.id !== '0' &&
+            !l.id.startsWith('assessment-')
+          );
+          const updatedCompleted = [...completedLevels, params.levelId as string];
+          const allDone = trackLevels.every(l => updatedCompleted.includes(l.id));
+
+          if (allDone && trackLevels.length > 0) {
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            setCompletedTrackName(getTrackDisplayName(track));
+            setShowTrackComplete(true);
+            return; // Don't navigate yet — show modal
+          }
+        }
       }
       router.replace('/(tabs)');
     } else {
@@ -33,6 +64,16 @@ export default function RevealScreen() {
         params: { ...params }
       });
     }
+  };
+
+  const handleGoToFreestyle = () => {
+    setShowTrackComplete(false);
+    router.replace('/(tabs)/freestyle');
+  };
+
+  const handleGoHome = () => {
+    setShowTrackComplete(false);
+    router.replace('/(tabs)');
   };
 
   let scores: CharismaAnalysis = {
@@ -116,9 +157,11 @@ export default function RevealScreen() {
 
       {/* Footer CTA */}
       <Animated.View entering={FadeInUp.delay(800)} style={styles.footer}>
-        <View style={styles.softPaywallHint}>
-          <Text style={styles.hintText}>Create an account to save your results & track progress</Text>
-        </View>
+        {!session && (
+          <View style={styles.softPaywallHint}>
+            <Text style={styles.hintText}>Create an account to save your results & track progress</Text>
+          </View>
+        )}
         <TouchableOpacity
           style={styles.buttonWrapper}
           onPress={handleContinue}
@@ -135,6 +178,74 @@ export default function RevealScreen() {
           </LinearGradient>
         </TouchableOpacity>
       </Animated.View>
+
+      {/* Track Completion Modal */}
+      <Modal
+        visible={showTrackComplete}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <View style={styles.modalOverlay}>
+          <Animated.View entering={FadeInUp.springify()} style={styles.modalContent}>
+            <LinearGradient
+              colors={['rgba(108, 92, 231, 0.15)', 'rgba(85, 239, 196, 0.08)']}
+              style={StyleSheet.absoluteFill}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            />
+
+            <View style={styles.trophyContainer}>
+              <LinearGradient
+                colors={COLORS.primaryGradient}
+                style={styles.trophyCircle}
+              >
+                <Trophy size={40} color="#fff" fill="#fff" />
+              </LinearGradient>
+            </View>
+
+            <Text style={styles.congratsTitle}>Track Complete! 🎉</Text>
+            <Text style={styles.congratsSubtitle}>
+              You've mastered every {completedTrackName} scenario. That's serious dedication.
+            </Text>
+
+            <View style={styles.congratsStats}>
+              <View style={styles.congratsStat}>
+                <Sparkles size={18} color={COLORS.primary} />
+                <Text style={styles.congratsStatText}>All scenarios conquered</Text>
+              </View>
+              <View style={styles.congratsStat}>
+                <Mic size={18} color={COLORS.accent} />
+                <Text style={styles.congratsStatText}>Try Freestyle for unlimited practice</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.freestyleButton}
+              onPress={handleGoToFreestyle}
+              activeOpacity={0.9}
+            >
+              <LinearGradient
+                colors={COLORS.primaryGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.freestyleButtonGradient}
+              >
+                <Mic size={20} color="#fff" style={{ marginRight: 8 }} />
+                <Text style={styles.freestyleButtonText}>Try Freestyle Mode</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.homeButton}
+              onPress={handleGoHome}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.homeButtonText}>Back to Home</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -284,5 +395,102 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: FONTS.bodyBold,
     letterSpacing: 0.5,
+  },
+  // Track Completion Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: SPACING.l,
+  },
+  modalContent: {
+    width: '100%',
+    borderRadius: 28,
+    padding: 32,
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: 'rgba(108, 92, 231, 0.3)',
+    overflow: 'hidden',
+  },
+  trophyContainer: {
+    marginBottom: 20,
+  },
+  trophyCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  congratsTitle: {
+    fontSize: 26,
+    fontFamily: FONTS.display,
+    color: COLORS.text,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  congratsSubtitle: {
+    fontSize: 15,
+    fontFamily: FONTS.body,
+    color: COLORS.textDim,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  congratsStats: {
+    width: '100%',
+    gap: 12,
+    marginBottom: 28,
+  },
+  congratsStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+  },
+  congratsStatText: {
+    fontSize: 14,
+    fontFamily: FONTS.bodyMedium,
+    color: COLORS.text,
+  },
+  freestyleButton: {
+    width: '100%',
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+    marginBottom: 12,
+  },
+  freestyleButtonGradient: {
+    paddingVertical: 16,
+    borderRadius: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  freestyleButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontFamily: FONTS.bodyBold,
+    letterSpacing: 0.5,
+  },
+  homeButton: {
+    paddingVertical: 12,
+  },
+  homeButtonText: {
+    fontSize: 14,
+    fontFamily: FONTS.bodyMedium,
+    color: COLORS.textDim,
   },
 });

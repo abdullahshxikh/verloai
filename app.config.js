@@ -1,6 +1,3 @@
-// Expo config that can safely read local env vars at build/start time.
-// NOTE: This still ships the key to the client bundle. For production, proxy OpenAI via a server.
-
 export default ({ config }) => ({
   ...config,
   name: "Verlo AI",
@@ -18,7 +15,8 @@ export default ({ config }) => ({
   },
   ios: {
     bundleIdentifier: "com.saleemshaikh.verloai",
-    supportsTablet: true
+    supportsTablet: true,
+    usesAppleSignIn: true,
   },
   android: {
     package: "com.anonymous.verloai",
@@ -34,20 +32,19 @@ export default ({ config }) => ({
   },
   plugins: [
     "expo-router",
-    "expo-font"
+    "expo-font",
+    "expo-web-browser",
+    "expo-apple-authentication",
+    [
+      "expo-build-properties",
+      {
+        "ios": {
+          "deploymentTarget": "15.1"
+        }
+      }
+    ]
   ],
   extra: {
     ...(config.extra ?? {}),
-    // Prefer EXPO_PUBLIC_OPENAI_API_KEY if provided, otherwise fall back to OPENAI_API_KEY.
-    EXPO_PUBLIC_OPENAI_API_KEY:
-      process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? process.env.OPENAI_API_KEY,
   },
 });
-
-
-
-
-
-
-
-

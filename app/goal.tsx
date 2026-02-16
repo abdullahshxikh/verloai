@@ -112,7 +112,7 @@ export default function GoalScreen() {
 
       {/* Progress Indicator */}
       <View style={styles.progressContainer}>
-        <OnboardingProgress currentStep={1} totalSteps={3} />
+        <OnboardingProgress currentStep={3} totalSteps={7} />
       </View>
 
       <View style={styles.content}>

@@ -45,10 +45,9 @@ export default function TimeInvestmentScreen() {
     };
 
     const animatedProps = useAnimatedStyle(() => {
-        const strokeDashoffset = CIRCUMFERENCE - (CIRCUMFERENCE * progress.value);
         return {
-            strokeDashoffset,
-        };
+            strokeDashoffset: CIRCUMFERENCE - (CIRCUMFERENCE * progress.value),
+        } as any;
     });
 
     return (
@@ -62,10 +61,7 @@ export default function TimeInvestmentScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
                     <ArrowLeft size={24} color={COLORS.text} />
                 </TouchableOpacity>
-                {/* Visual progress bar matching Impact screen */}
-                <View style={styles.progressBarBg}>
-                    <View style={[styles.progressBarFill, { width: '80%' }]} />
-                </View>
+                <OnboardingProgress currentStep={5} totalSteps={7} style={{ flex: 1, marginHorizontal: 16 }} width="auto" />
                 <View style={{ width: 40 }} />
             </View>
 

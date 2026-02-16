@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, ScrollView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,10 +7,11 @@ import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useAuth } from '../../lib/AuthProvider';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import * as Haptics from 'expo-haptics';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 export default function SignInScreen() {
     const router = useRouter();
-    const { signIn } = useAuth();
+    const { signIn, signInWithGoogle, signInWithApple } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -81,6 +82,13 @@ export default function SignInScreen() {
                         </View>
 
                         <TouchableOpacity
+                            style={styles.forgotPasswordButton}
+                            onPress={() => router.push('/auth/forgot-password')}
+                        >
+                            <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
                             style={styles.buttonWrapper}
                             onPress={handleSignIn}
                             disabled={loading}
@@ -95,6 +103,50 @@ export default function SignInScreen() {
                                 <Text style={styles.buttonText}>{loading ? 'Signing In...' : 'Sign In'}</Text>
                             </LinearGradient>
                         </TouchableOpacity>
+
+                        <View style={styles.separatorContainer}>
+                            <View style={styles.separatorLine} />
+                            <Text style={styles.separatorText}>or continue with</Text>
+                            <View style={styles.separatorLine} />
+                        </View>
+
+                        <View style={styles.socialButtons}>
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    setLoading(true);
+                                    const { error } = await signInWithGoogle();
+                                    if (error) {
+                                        Alert.alert('Sign In Error', error.message);
+                                        setLoading(false);
+                                    }
+                                }}
+                                disabled={loading}
+                                style={styles.googleButtonWrapper}
+                            >
+                                <Image
+                                    source={require('../../assets/images/google_dark.png')}
+                                    style={styles.googleImageButton}
+                                    resizeMode="contain"
+                                />
+                            </TouchableOpacity>
+
+                            {Platform.OS === 'ios' && (
+                                <AppleAuthentication.AppleAuthenticationButton
+                                    buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                                    buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                                    cornerRadius={25}
+                                    style={styles.appleButton}
+                                    onPress={async () => {
+                                        setLoading(true);
+                                        const { error } = await signInWithApple();
+                                        if (error) {
+                                            Alert.alert('Sign In Error', error.message);
+                                        }
+                                        setLoading(false);
+                                    }}
+                                />
+                            )}
+                        </View>
 
                         <TouchableOpacity
                             style={styles.linkButton}
@@ -169,6 +221,15 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: 'rgba(255, 255, 255, 0.1)',
     },
+    forgotPasswordButton: {
+        alignSelf: 'flex-end',
+        marginBottom: SPACING.s,
+    },
+    forgotPasswordText: {
+        fontSize: 14,
+        fontFamily: FONTS.bodyMedium,
+        color: COLORS.primary,
+    },
     buttonWrapper: {
         marginTop: SPACING.m,
         borderRadius: 12,
@@ -191,5 +252,39 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: COLORS.textDim,
         fontFamily: FONTS.bodyBold,
+    },
+    separatorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: SPACING.l,
+    },
+    separatorLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: COLORS.surfaceLight,
+    },
+    separatorText: {
+        marginHorizontal: 12,
+        color: COLORS.textDim,
+        fontSize: 12,
+        fontFamily: FONTS.body,
+    },
+    socialButtons: {
+        gap: 12,
+        marginBottom: SPACING.m,
+    },
+    googleButtonWrapper: {
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    googleImageButton: {
+        width: '100%',
+        height: 50,
+    },
+    appleButton: {
+        width: '70%',
+        height: 50,
+        alignSelf: 'center',
     },
 });

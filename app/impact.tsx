@@ -48,8 +48,8 @@ export default function ImpactScreen() {
                     <ArrowRight size={24} color={COLORS.textDim} style={{ transform: [{ rotate: '180deg' }] }} />
                 </TouchableOpacity>
                 <OnboardingProgress
-                    currentStep={2}
-                    totalSteps={3}
+                    currentStep={7}
+                    totalSteps={7}
                     style={{ flex: 1, marginHorizontal: 16 }}
                     width="auto"
                 />

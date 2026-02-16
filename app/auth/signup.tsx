@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Alert, ScrollView, Image } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,11 +7,12 @@ import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useAuth } from '../../lib/AuthProvider';
 import { COLORS, FONTS, SPACING } from '../../constants/theme';
 import * as Haptics from 'expo-haptics';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 export default function SignUpScreen() {
     const router = useRouter();
     const params = useLocalSearchParams();
-    const { signUp } = useAuth();
+    const { signUp, signInWithGoogle, signInWithApple } = useAuth();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
@@ -116,6 +117,50 @@ export default function SignUpScreen() {
                             </LinearGradient>
                         </TouchableOpacity>
 
+                        <View style={styles.separatorContainer}>
+                            <View style={styles.separatorLine} />
+                            <Text style={styles.separatorText}>or continue with</Text>
+                            <View style={styles.separatorLine} />
+                        </View>
+
+                        <View style={styles.socialButtons}>
+                            <TouchableOpacity
+                                onPress={async () => {
+                                    setLoading(true);
+                                    const { error } = await signInWithGoogle();
+                                    if (error) {
+                                        Alert.alert('Sign In Error', error.message);
+                                        setLoading(false);
+                                    }
+                                }}
+                                disabled={loading}
+                                style={styles.googleButtonWrapper}
+                            >
+                                <Image
+                                    source={require('../../assets/images/google_dark.png')}
+                                    style={styles.googleImageButton}
+                                    resizeMode="contain"
+                                />
+                            </TouchableOpacity>
+
+                            {Platform.OS === 'ios' && (
+                                <AppleAuthentication.AppleAuthenticationButton
+                                    buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_UP}
+                                    buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.WHITE}
+                                    cornerRadius={25}
+                                    style={styles.appleButton}
+                                    onPress={async () => {
+                                        setLoading(true);
+                                        const { error } = await signInWithApple();
+                                        if (error) {
+                                            Alert.alert('Sign Up Error', error.message);
+                                        }
+                                        setLoading(false);
+                                    }}
+                                />
+                            )}
+                        </View>
+
                         <TouchableOpacity
                             style={styles.linkButton}
                             onPress={() => router.replace('/auth/signin')}
@@ -211,5 +256,39 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: COLORS.textDim,
         fontFamily: FONTS.bodyBold,
+    },
+    separatorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginVertical: SPACING.l,
+    },
+    separatorLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: COLORS.surfaceLight,
+    },
+    separatorText: {
+        marginHorizontal: 12,
+        color: COLORS.textDim,
+        fontSize: 12,
+        fontFamily: FONTS.body,
+    },
+    socialButtons: {
+        gap: 12,
+        marginBottom: SPACING.m,
+    },
+    googleButtonWrapper: {
+        width: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    googleImageButton: {
+        width: '100%',
+        height: 50,
+    },
+    appleButton: {
+        width: '70%',
+        height: 50,
+        alignSelf: 'center',
     },
 });

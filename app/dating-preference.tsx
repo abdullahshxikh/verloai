@@ -3,56 +3,46 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, ArrowRight } from 'lucide-react-native';
+import { ArrowLeft, ArrowRight, Heart, User } from 'lucide-react-native';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { useState } from 'react';
 import * as Haptics from 'expo-haptics';
 import { COLORS, FONTS, SPACING } from '../constants/theme';
 import OnboardingProgress from '../components/OnboardingProgress';
 
-export default function GenderScreen() {
+export default function DatingPreferenceScreen() {
     const router = useRouter();
-    const [selectedGender, setSelectedGender] = useState<string | null>(null);
+    const [selectedPreference, setSelectedPreference] = useState<string | null>(null);
 
-    const genders = [
-        "Woman",
-        "Man",
-        "Non-binary",
-        "Prefer not to say"
+    const preferences = [
+        {
+            id: "women",
+            label: "Practice with Women",
+            description: "Female dating coach for your scenarios",
+            icon: Heart,
+        },
+        {
+            id: "men",
+            label: "Practice with Men",
+            description: "Male dating coach for your scenarios",
+            icon: User,
+        },
     ];
 
-    const handleSelect = async (gender: string) => {
+    const handleSelect = async (preference: string) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        setSelectedGender(gender);
+        setSelectedPreference(preference);
         try {
-            await AsyncStorage.setItem('user_gender', gender);
+            await AsyncStorage.setItem('dating_avatar_preference', preference);
         } catch (e) {
-            console.error('Failed to save gender', e);
+            console.error('Failed to save dating preference', e);
         }
     };
 
-    const handleContinue = async () => {
-        if (selectedGender) {
+    const handleContinue = () => {
+        if (selectedPreference) {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-            // Auto-set dating avatar preference based on gender
-            try {
-                if (selectedGender === 'Man') {
-                    // Men practice with women (female coach)
-                    await AsyncStorage.setItem('dating_avatar_preference', 'women');
-                    router.push('/consent');
-                } else if (selectedGender === 'Woman') {
-                    // Women practice with men (male coach)
-                    await AsyncStorage.setItem('dating_avatar_preference', 'men');
-                    router.push('/consent');
-                } else {
-                    // Non-binary or Prefer not to say - ask for preference
-                    router.push('/dating-preference');
-                }
-            } catch (e) {
-                console.error('Failed to set dating preference', e);
-                router.push('/consent');
-            }
+            router.push('/consent');
         }
     };
 
@@ -73,23 +63,24 @@ export default function GenderScreen() {
 
             {/* Progress Indicator */}
             <View style={styles.progressContainer}>
-                <OnboardingProgress currentStep={1} totalSteps={7} width="80%" />
+                <OnboardingProgress currentStep={2} totalSteps={7} width="80%" />
             </View>
 
             <View style={styles.content}>
                 <Animated.View entering={FadeInUp.delay(200).springify()} style={styles.header}>
-                    <Text style={styles.title}>How do you identify?</Text>
+                    <Text style={styles.title}>Dating Scenarios</Text>
                     <Text style={styles.subtitle}>
-                        We use this to personalize your coaching experience.
+                        Who would you like to practice dating conversations with?
                     </Text>
                 </Animated.View>
 
                 <ScrollView contentContainerStyle={styles.optionsContainer} showsVerticalScrollIndicator={false}>
-                    {genders.map((gender, index) => {
-                        const isSelected = selectedGender === gender;
+                    {preferences.map((pref, index) => {
+                        const isSelected = selectedPreference === pref.id;
+                        const IconComponent = pref.icon;
                         return (
                             <Animated.View
-                                key={gender}
+                                key={pref.id}
                                 entering={FadeInDown.delay(300 + (index * 100)).springify()}
                                 style={styles.optionWrapper}
                             >
@@ -98,12 +89,23 @@ export default function GenderScreen() {
                                         styles.option,
                                         isSelected && styles.optionSelected
                                     ]}
-                                    onPress={() => handleSelect(gender)}
+                                    onPress={() => handleSelect(pref.id)}
                                     activeOpacity={0.8}
                                 >
-                                    <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
-                                        {gender}
-                                    </Text>
+                                    <View style={[styles.iconContainer, isSelected && styles.iconContainerSelected]}>
+                                        <IconComponent
+                                            size={28}
+                                            color={isSelected ? COLORS.primary : COLORS.textDim}
+                                        />
+                                    </View>
+                                    <View style={styles.optionContent}>
+                                        <Text style={[styles.optionText, isSelected && styles.optionTextSelected]}>
+                                            {pref.label}
+                                        </Text>
+                                        <Text style={styles.optionDescription}>
+                                            {pref.description}
+                                        </Text>
+                                    </View>
                                     <View style={[styles.radio, isSelected && styles.radioSelected]}>
                                         {isSelected && <View style={styles.radioInner} />}
                                     </View>
@@ -113,21 +115,24 @@ export default function GenderScreen() {
                     })}
                 </ScrollView>
 
-                <Animated.View entering={FadeInUp.delay(600).springify()} style={styles.footer}>
+                <Animated.View entering={FadeInUp.delay(500).springify()} style={styles.footer}>
+                    <Text style={styles.footerNote}>
+                        You can change this anytime in your profile settings
+                    </Text>
                     <TouchableOpacity
-                        style={[styles.button, !selectedGender && styles.buttonDisabled]}
+                        style={[styles.button, !selectedPreference && styles.buttonDisabled]}
                         onPress={handleContinue}
-                        disabled={!selectedGender}
+                        disabled={!selectedPreference}
                         activeOpacity={0.9}
                     >
                         <LinearGradient
-                            colors={selectedGender ? COLORS.primaryGradient : (['#333', '#333'] as const)}
+                            colors={selectedPreference ? COLORS.primaryGradient : (['#333', '#333'] as const)}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 0 }}
                             style={styles.buttonGradient}
                         >
-                            <Text style={[styles.buttonText, !selectedGender && { color: '#666' }]}>Continue</Text>
-                            {selectedGender && <ArrowRight size={20} color="#fff" style={{ marginLeft: 8 }} />}
+                            <Text style={[styles.buttonText, !selectedPreference && { color: '#666' }]}>Continue</Text>
+                            {selectedPreference && <ArrowRight size={20} color="#fff" style={{ marginLeft: 8 }} />}
                         </LinearGradient>
                     </TouchableOpacity>
                 </Animated.View>
@@ -163,10 +168,10 @@ const styles = StyleSheet.create({
     },
     content: {
         flex: 1,
-        paddingHorizontal: 0, // Removed side borders
+        paddingHorizontal: 0,
     },
     header: {
-        paddingTop: 120, // Kept high to clear nav
+        paddingTop: 120,
         paddingBottom: SPACING.xl,
         alignItems: 'center',
         paddingHorizontal: SPACING.l,
@@ -183,11 +188,12 @@ const styles = StyleSheet.create({
         fontFamily: FONTS.body,
         color: COLORS.textDim,
         textAlign: 'center',
+        lineHeight: 24,
     },
     optionsContainer: {
-        paddingBottom: 100,
-        gap: 12,
-        paddingHorizontal: SPACING.s,
+        paddingBottom: 160,
+        gap: 16,
+        paddingHorizontal: SPACING.l,
     },
     optionWrapper: {
         width: '100%',
@@ -195,7 +201,6 @@ const styles = StyleSheet.create({
     option: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
         backgroundColor: COLORS.surface,
         padding: 20,
         borderRadius: 20,
@@ -206,14 +211,35 @@ const styles = StyleSheet.create({
         borderColor: COLORS.primary,
         backgroundColor: 'rgba(108, 92, 231, 0.1)',
     },
+    iconContainer: {
+        width: 56,
+        height: 56,
+        borderRadius: 16,
+        backgroundColor: COLORS.surfaceLight,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginRight: 16,
+    },
+    iconContainerSelected: {
+        backgroundColor: 'rgba(108, 92, 231, 0.2)',
+    },
+    optionContent: {
+        flex: 1,
+    },
     optionText: {
         fontSize: 18,
-        fontFamily: FONTS.body,
+        fontFamily: FONTS.bodyMedium,
         color: COLORS.textDim,
+        marginBottom: 4,
     },
     optionTextSelected: {
         color: COLORS.text,
         fontFamily: FONTS.bodyBold,
+    },
+    optionDescription: {
+        fontSize: 14,
+        fontFamily: FONTS.body,
+        color: COLORS.textDim,
     },
     radio: {
         width: 24,
@@ -239,6 +265,13 @@ const styles = StyleSheet.create({
         bottom: SPACING.xl,
         left: SPACING.l,
         right: SPACING.l,
+    },
+    footerNote: {
+        fontSize: 13,
+        fontFamily: FONTS.body,
+        color: COLORS.textDim,
+        textAlign: 'center',
+        marginBottom: SPACING.m,
     },
     button: {
         shadowColor: COLORS.primary,

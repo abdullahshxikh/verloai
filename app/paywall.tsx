@@ -1,40 +1,154 @@
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Check } from 'lucide-react-native';
+import { Check, Crown } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useState } from 'react';
 import { COLORS, FONTS, SPACING } from '../constants/theme';
 import { useOnboarding } from '../lib/OnboardingProvider';
+import { useRevenueCat } from '../lib/RevenueCatProvider';
 
 export default function PaywallScreen() {
   const router = useRouter();
   const { completeOnboarding } = useOnboarding();
+  const { offerings, isProMember, purchasePackage, restorePurchases, loading: rcLoading, showPaywall } = useRevenueCat();
+  // Optional: Select a specific offering (e.g. for experiments or placements)
+  // const offering = offerings?.all['experiment_group'] || offerings?.current;
+  const offering = offerings?.current;
+  const [purchasing, setPurchasing] = useState(false);
+
+  // Auto-select monthly as default (best value for the user)
+  const availablePackages = offering?.availablePackages || [];
+  const [selectedPackage, setSelectedPackage] = useState<string>(
+    availablePackages.find(p => p.identifier === '$rc_monthly')?.identifier ||
+    availablePackages[0]?.identifier || '$rc_monthly'
+  );
 
   const features = [
-    { text: "Unlimited Verlo conversations", free: false, pro: true },
-    { text: "Advanced scenarios (Conflict, Dating)", free: false, pro: true },
-    { text: "Deep skill breakdown & drills", free: false, pro: true },
-    { text: "Personalized 'Verlo Plan'", free: false, pro: true },
-    { text: "1 Daily Challenge", free: true, pro: true },
-    { text: "Weekly Re-score", free: true, pro: true },
+    { text: "Unlimited AI conversations", pro: true },
+    { text: "Advanced scenarios (Conflict, Dating)", pro: true },
+    { text: "Deep skill breakdown & drills", pro: true },
+    { text: "Personalized AI coaching", pro: true },
+    { text: "Priority support", pro: true },
   ];
 
-  const handleContinue = async () => {
-    // If user is already authenticated (e.g. came from projection -> signup -> paywall),
-    // mark onboarding as complete and go to tabs.
-    // Otherwise, send to signup first.
-
-    // For now, simpler flow: everyone goes to Signup after Paywall (which is standard for "Free Trial" CTA)
-    // But based on our flow, they came from Projection -> Signup -> Paywall.
-    // So they are LIKELY authenticated.
-
-    // If we came with levelId=0 (assessment) and maybe completed it? 
-    // Actually, usually we might award XP for completing onboarding.
-    // Let's just complete onboarding.
-
-    await completeOnboarding();
-    router.replace('/(tabs)');
+  // Helper: get human-readable period label
+  const getPackagePeriod = (identifier: string) => {
+    switch (identifier) {
+      case '$rc_weekly': return '/ week';
+      case '$rc_monthly': return '/ month';
+      case '$rc_annual': return '/ year';
+      case '$rc_lifetime': return 'one-time';
+      default: return '';
+    }
   };
+
+  // Use RevenueCat's native paywall UI
+  const handleShowNativePaywall = async () => {
+    try {
+      await showPaywall();
+      // After paywall dismissal, check if user is now pro
+      if (isProMember) {
+        await completeOnboarding();
+        router.replace('/(tabs)');
+      }
+    } catch (error) {
+      console.error('Paywall error:', error);
+    }
+  };
+
+  // Manual purchase flow (alternative to native paywall)
+  const handlePurchase = async () => {
+    if (!offering?.availablePackages) {
+      Alert.alert('Error', 'No subscription options available');
+      return;
+    }
+
+    // Find the selected package (match by identifier like $rc_monthly)
+    const pkg = offering.availablePackages.find(
+      p => p.identifier === selectedPackage
+    );
+
+    if (!pkg) {
+      Alert.alert('Error', 'Selected package not found');
+      return;
+    }
+
+    setPurchasing(true);
+    const { customerInfo, error, userCancelled } = await purchasePackage(pkg);
+    setPurchasing(false);
+
+    if (userCancelled) {
+      return;
+    }
+
+    if (error) {
+      Alert.alert('Purchase Failed', error.message || 'Something went wrong');
+      return;
+    }
+
+    // Strictly check for entitlement active status as per rules
+    if (customerInfo?.entitlements.active['Verlo ai Pro']) {
+      Alert.alert(
+        'Success!',
+        'Welcome to Verlo AI Pro! 🎉',
+        [
+          {
+            text: 'Get Started',
+            onPress: async () => {
+              await completeOnboarding();
+              router.replace('/(tabs)');
+            },
+          },
+        ]
+      );
+    } else {
+      // Fallback if purchase succeeded but entitlement is missing (rare)
+      Alert.alert('Purchase Successful', 'Your purchase was successful but we could not verify your Pro status. Please try restoring purchases.');
+    }
+  };
+
+  const handleRestore = async () => {
+    setPurchasing(true);
+    const { customerInfo, error } = await restorePurchases();
+    setPurchasing(false);
+
+    if (error) {
+      Alert.alert('Restore Failed', 'No purchases found to restore');
+      return;
+    }
+
+    if (customerInfo) {
+      Alert.alert('Restored!', 'Your purchases have been restored');
+      if (isProMember) {
+        await completeOnboarding();
+        router.replace('/(tabs)');
+      }
+    }
+  };
+
+  // Get package details from RevenueCat
+  const getPackagePrice = (identifier: string) => {
+    const pkg = offering?.availablePackages?.find(p => p.identifier === identifier);
+    return pkg?.product.priceString || '$30.00';
+  };
+
+  const getPackageDescription = (identifier: string) => {
+    const pkg = offering?.availablePackages?.find(p => p.identifier === identifier);
+    return pkg?.product.introPrice?.priceString ? 'First 7 days free' : '';
+  };
+
+  if (rcLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LinearGradient colors={[COLORS.background, '#1a1a2e']} style={StyleSheet.absoluteFill} />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Loading subscription options...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -42,61 +156,97 @@ export default function PaywallScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Reach your potential.</Text>
+          <Crown size={48} color={COLORS.primary} fill={COLORS.primary} style={{ marginBottom: 16 }} />
+          <Text style={styles.headerTitle}>Unlock Your Full Potential</Text>
           <Text style={styles.headerSubtitle}>
-            Most users see a 15% score increase in the first week with Pro.
+            Join thousands improving their charisma with Verlo AI Pro
           </Text>
         </View>
 
-        {/* Pro Card */}
-        <View style={styles.proCard}>
-          <LinearGradient
-            colors={[COLORS.surfaceLight, COLORS.surface]}
-            style={StyleSheet.absoluteFill}
-          />
-          <View style={styles.proHeader}>
-            <Text style={styles.proLabel}>CHARISMA PRO</Text>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>RECOMMENDED</Text>
+        {/* Subscription Packages */}
+        {availablePackages.length > 0 ? (
+          <View style={styles.packagesContainer}>
+            {availablePackages.map((pkg, index) => {
+              const isSelected = selectedPackage === pkg.identifier;
+              const isPopular = pkg.identifier === '$rc_monthly';
+
+              return (
+                <TouchableOpacity
+                  key={pkg.identifier}
+                  style={[styles.packageCard, isSelected && styles.packageCardSelected]}
+                  onPress={() => setSelectedPackage(pkg.identifier)}
+                >
+                  {isPopular && (
+                    <View style={styles.popularBadge}>
+                      <Text style={styles.popularText}>BEST VALUE</Text>
+                    </View>
+                  )}
+                  <View style={styles.packageHeader}>
+                    <View style={styles.radioOuter}>
+                      {isSelected && <View style={styles.radioInner} />}
+                    </View>
+                    <View style={styles.packageInfo}>
+                      <Text style={styles.packageTitle}>{pkg.product.title || pkg.identifier.replace('$rc_', '').charAt(0).toUpperCase() + pkg.identifier.replace('$rc_', '').slice(1)}</Text>
+                      <Text style={styles.packagePrice}>
+                        {pkg.product.priceString} {getPackagePeriod(pkg.identifier)}
+                      </Text>
+                      {pkg.product.introPrice && (
+                        <Text style={styles.packageTrial}>
+                          {pkg.product.introPrice.priceString} for {pkg.product.introPrice.period}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        ) : (
+          // Fallback UI if offerings aren't loaded
+          <View style={styles.proCard}>
+            <LinearGradient
+              colors={[COLORS.surfaceLight, COLORS.surface]}
+              style={StyleSheet.absoluteFill}
+            />
+            <View style={styles.proHeader}>
+              <Text style={styles.proLabel}>VERLO AI PRO</Text>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>RECOMMENDED</Text>
+              </View>
+            </View>
+
+            <View style={styles.priceContainer}>
+              <Text style={styles.priceText}>$30.00 / month</Text>
+              <Text style={styles.trialText}>First 7 days free</Text>
             </View>
           </View>
+        )}
 
+        {/* Features List */}
+        <View style={styles.featuresCard}>
+          <Text style={styles.featuresTitle}>What's Included:</Text>
           <View style={styles.featureList}>
-            {features.map((feature, index) => (
+            {features.filter(f => f.pro).map((feature, index) => (
               <View key={index} style={styles.featureRow}>
-                <View style={styles.iconContainer}>
-                  {feature.pro ? (
-                    <Check size={18} color={COLORS.primary} strokeWidth={3} />
-                  ) : (
-                    <View style={styles.bullet} />
-                  )}
-                </View>
-                <Text style={[styles.featureText, { opacity: feature.pro ? 1 : 0.5 }]}>
-                  {feature.text}
-                </Text>
+                <Check size={20} color={COLORS.primary} strokeWidth={3} style={{ marginRight: 12 }} />
+                <Text style={styles.featureText}>{feature.text}</Text>
               </View>
             ))}
           </View>
-
-          <View style={styles.priceContainer}>
-            <Text style={styles.priceText}>$29.99 / month</Text>
-            <Text style={styles.trialText}>First 7 days free</Text>
-          </View>
         </View>
 
-        {/* Free Option */}
-        <View style={styles.freeContainer}>
-          <Text style={styles.freeTitle}>Basic Access</Text>
-          <Text style={styles.freeText}>
-            1 daily challenge • Weekly score update
-          </Text>
-        </View>
+        {/* Restore Purchases Link */}
+        <TouchableOpacity onPress={handleRestore} style={styles.restoreButton}>
+          <Text style={styles.restoreText}>Restore Purchases</Text>
+        </TouchableOpacity>
       </ScrollView>
 
       <View style={styles.footer}>
+        {/* Subscribe Button */}
         <TouchableOpacity
           style={styles.buttonWrapper}
-          onPress={handleContinue}
+          onPress={handlePurchase}
+          disabled={purchasing || !offerings}
         >
           <LinearGradient
             colors={COLORS.primaryGradient}
@@ -104,16 +254,17 @@ export default function PaywallScreen() {
             end={{ x: 1, y: 0 }}
             style={styles.primaryButton}
           >
-            <Text style={styles.primaryButtonText}>Start 7-Day Free Trial</Text>
+            {purchasing ? (
+              <ActivityIndicator color={COLORS.text} />
+            ) : (
+              <Text style={styles.primaryButtonText}>Subscribe Now</Text>
+            )}
           </LinearGradient>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          onPress={handleContinue}
-        >
-          <Text style={styles.secondaryButtonText}>Continue with Basic Access</Text>
-        </TouchableOpacity>
+        <Text style={styles.disclaimerText}>
+          Cancel anytime. Terms apply.
+        </Text>
       </View>
     </SafeAreaView>
   );
@@ -124,10 +275,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: COLORS.background,
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 14,
+    fontFamily: FONTS.body,
+    color: COLORS.textDim,
+  },
   scrollContent: {
     paddingHorizontal: SPACING.l,
     paddingTop: SPACING.xl,
-    paddingBottom: 160,
+    paddingBottom: 200,
   },
   header: {
     marginBottom: SPACING.xl,
@@ -146,6 +308,77 @@ const styles = StyleSheet.create({
     color: COLORS.textDim,
     textAlign: 'center',
     lineHeight: 24,
+  },
+  packagesContainer: {
+    marginBottom: SPACING.l,
+  },
+  packageCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    position: 'relative',
+  },
+  packageCardSelected: {
+    borderColor: COLORS.primary,
+    backgroundColor: 'rgba(108, 92, 231, 0.1)',
+  },
+  popularBadge: {
+    position: 'absolute',
+    top: -8,
+    right: 16,
+    backgroundColor: COLORS.accent,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  popularText: {
+    fontSize: 10,
+    fontFamily: FONTS.bodyBold,
+    color: COLORS.background,
+    letterSpacing: 0.5,
+  },
+  packageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  radioOuter: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  radioInner: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: COLORS.primary,
+  },
+  packageInfo: {
+    flex: 1,
+  },
+  packageTitle: {
+    fontSize: 16,
+    fontFamily: FONTS.bodyBold,
+    color: COLORS.text,
+    marginBottom: 4,
+  },
+  packagePrice: {
+    fontSize: 14,
+    fontFamily: FONTS.body,
+    color: COLORS.textDim,
+  },
+  packageTrial: {
+    fontSize: 12,
+    fontFamily: FONTS.body,
+    color: COLORS.accent,
+    marginTop: 2,
   },
   proCard: {
     borderRadius: 24,
@@ -179,30 +412,6 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.bodyBold,
     letterSpacing: 0.5,
   },
-  featureList: {
-    marginBottom: SPACING.l,
-  },
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  iconContainer: {
-    width: 24,
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  bullet: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: COLORS.surfaceLight,
-  },
-  featureText: {
-    fontSize: 14,
-    fontFamily: FONTS.bodyMedium,
-    color: COLORS.text,
-  },
   priceContainer: {
     borderTopWidth: 1,
     borderTopColor: 'rgba(255,255,255,0.1)',
@@ -220,19 +429,39 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.body,
     color: COLORS.textDim,
   },
-  freeContainer: {
+  featuresCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: SPACING.l,
+  },
+  featuresTitle: {
+    fontSize: 18,
+    fontFamily: FONTS.displaySemi,
+    color: COLORS.text,
+    marginBottom: 16,
+  },
+  featureList: {
+    gap: 12,
+  },
+  featureRow: {
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  freeTitle: {
-    fontSize: 16,
-    fontFamily: FONTS.bodyBold,
-    color: COLORS.textDim,
-    marginBottom: 4,
-  },
-  freeText: {
+  featureText: {
     fontSize: 14,
-    fontFamily: FONTS.body,
-    color: '#666',
+    fontFamily: FONTS.bodyMedium,
+    color: COLORS.text,
+    flex: 1,
+  },
+  restoreButton: {
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  restoreText: {
+    fontSize: 14,
+    fontFamily: FONTS.bodyMedium,
+    color: COLORS.primary,
   },
   footer: {
     position: 'absolute',
@@ -241,7 +470,7 @@ const styles = StyleSheet.create({
     right: 0,
     padding: SPACING.l,
     paddingBottom: SPACING.xl,
-    backgroundColor: COLORS.background, // Opaque to hide scroll content behind
+    backgroundColor: COLORS.background,
     borderTopWidth: 1,
     borderTopColor: COLORS.surfaceLight,
   },
@@ -264,13 +493,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: FONTS.bodyBold,
   },
-  secondaryButton: {
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  secondaryButtonText: {
+  disclaimerText: {
+    fontSize: 11,
+    fontFamily: FONTS.body,
     color: COLORS.textDim,
-    fontSize: 14,
-    fontFamily: FONTS.bodyMedium,
+    textAlign: 'center',
+    opacity: 0.7,
   },
 });

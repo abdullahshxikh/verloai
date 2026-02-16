@@ -29,17 +29,16 @@ export default function LevelScreen() {
     // We can stick to standard processing for now, but maybe tag it with the level ID
     router.replace({
       pathname: '/processing',
-      params: { uris: JSON.stringify(uris), levelId: level.id, levelXp: level.xp.toString() }
+      params: { uris: JSON.stringify(uris), levelId: level.id, levelXp: level.xp.toString(), track: level.track, difficulty: level.difficulty }
     });
   };
 
   const handleEndConversation = (uris: string[]) => {
     if (!level) return;
 
-    // User manually ended - analyze their conversation
     router.replace({
       pathname: '/processing',
-      params: { uris: JSON.stringify(uris), levelId: level.id, levelXp: level.xp.toString() }
+      params: { uris: JSON.stringify(uris), levelId: level.id, levelXp: level.xp.toString(), track: level.track, difficulty: level.difficulty }
     });
   };
 
@@ -55,13 +54,23 @@ export default function LevelScreen() {
     )
   }
 
-  // State for avatar and voice
-  // State for avatar and voice
+  // Select avatar and voice based on dating preference
   const [avatarSource, setAvatarSource] = useState(require('../../assets/lottie/talking_man.json'));
-  const [voiceId, setVoiceId] = useState('daniel');
+  const [voiceId, setVoiceId] = useState('Edward');
 
-  // Removed complex rotation logic. Defaulting to Talking Man (Daniel) for consistency as requested.
-  // If needed later, we can re-introduce logic here.
+  useEffect(() => {
+    const loadPreference = async () => {
+      const pref = await AsyncStorage.getItem('dating_avatar_preference');
+      if (pref === 'women') {
+        setAvatarSource(require('../../assets/lottie/female_avatar.json'));
+        setVoiceId('Elizabeth');
+      } else {
+        setAvatarSource(require('../../assets/lottie/talking_man.json'));
+        setVoiceId('Edward');
+      }
+    };
+    loadPreference();
+  }, []);
 
   // Construct scenario object for VoiceConversation
   const scenario = {
@@ -75,6 +84,8 @@ export default function LevelScreen() {
     <View style={styles.container}>
       <VoiceConversation
         scenario={scenario}
+        levelId={level.id}
+        track={level.track}
         levelContext={level.context}
         onComplete={handleComplete}
         onExit={handleExit}

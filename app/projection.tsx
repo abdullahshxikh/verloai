@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { TrendingUp, CheckCircle, ArrowRight, Clock } from 'lucide-react-native';
 import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
 import { COLORS, FONTS, SPACING } from '../constants/theme';
-import { CharismaAnalysis } from '../services/openai';
+import { CharismaAnalysis } from '../services/inworld';
 
 export default function ProjectionScreen() {
     const router = useRouter();
@@ -26,8 +26,8 @@ export default function ProjectionScreen() {
         console.log("Error parsing params", e);
     }
 
-    // Logic for projection
-    const projectedScore = Math.min(100, score + (timeInvestment * 1.5) + 10);
+    // Logic for projection — always show potential in 90+ range to motivate
+    const projectedScore = Math.min(99, Math.max(92, score + (timeInvestment * 2) + 20));
     const improvement = Math.round(projectedScore - score);
 
     const benefits = [

@@ -3,62 +3,92 @@ import { StatusBar } from 'expo-status-bar';
 import { useFonts, Syne_600SemiBold, Syne_700Bold } from '@expo-google-fonts/syne';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from '@expo-google-fonts/inter';
 import { View, ActivityIndicator } from 'react-native';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { COLORS } from '../constants/theme';
 import { AuthProvider, useAuth } from '../lib/AuthProvider';
 import { OnboardingProvider, useOnboarding } from '../lib/OnboardingProvider';
 import { TracksProvider } from '../lib/TracksProvider';
 import { ProgressProvider } from '../lib/ProgressProvider';
+import { RevenueCatProvider, useRevenueCat } from '../lib/RevenueCatProvider';
 
 function AppGate() {
   const { session, loading: authLoading } = useAuth();
-  const { hasCompletedOnboarding, loading: onboardingLoading } = useOnboarding();
+  const { hasCompletedOnboarding, completeOnboarding, loading: onboardingLoading } = useOnboarding();
+  const { isProMember, loading: rcLoading } = useRevenueCat();
   const segments = useSegments();
   const router = useRouter();
 
+  const isNavigating = useRef(false);
+
   useEffect(() => {
-    if (authLoading || onboardingLoading) return;
+    if (authLoading || onboardingLoading || rcLoading) return;
+    if (isNavigating.current) return;
 
     const inAuth = segments[0] === 'auth';
     const inOnboarding = segments[0] === undefined ||
-      ['gender', 'consent', 'goal', 'obstacles', 'time-investment', 'assessment-ready', 'assessment', 'processing', 'reveal', 'impact', 'projection'].includes(segments[0] as string);
+      ['gender', 'dating-preference', 'consent', 'goal', 'obstacles', 'time-investment', 'assessment-ready', 'assessment', 'processing', 'voice-preview', 'reveal', 'impact', 'projection', 'paywall', 'freestyle-session'].includes(segments[0] as string);
     const inTabs = segments[0] === '(tabs)';
     const inPaywall = segments[0] === 'paywall';
 
+    const navigate = (path: string) => {
+      isNavigating.current = true;
+      router.replace(path as any);
+      setTimeout(() => { isNavigating.current = false; }, 100);
+    };
+
     // If onboarding not completed
     if (!hasCompletedOnboarding) {
-      // If authenticated, they must have just signed up/in -> Go to Paywall
+      // If authenticated + Pro, they bought a sub — complete onboarding and go to tabs
+      if (session && isProMember) {
+        completeOnboarding();
+        if (!inTabs) {
+          navigate('/(tabs)');
+        }
+        return;
+      }
+
+      // If authenticated but not Pro, show paywall
       if (session) {
         if (!inPaywall) {
-          router.replace('/paywall');
+          navigate('/paywall');
         }
         return;
       }
 
       // If not authenticated, allow normal onboarding flow AND auth screens
       if (!inOnboarding && !inAuth) {
-        router.replace('/');
+        navigate('/');
       }
       return;
     }
 
     // After seeing results (reveal screen), require authentication
-    // If onboarding completed (passed Paywall):
+    // If onboarding completed:
     if (!session) {
       if (!inAuth) {
         // If they logged out or session expired, send to signin
-        router.replace('/auth/signin');
+        navigate('/auth/signin');
       }
       return;
     }
 
-    // If authenticated and onboarding completed, allow access to main app
-    if (segments[0] === undefined || inAuth || inPaywall) {
-      router.replace('/(tabs)');
+    // HARD PAYWALL: If authenticated but NOT a Pro member, force paywall
+    if (!isProMember) {
+      if (!inPaywall) {
+        navigate('/paywall');
+      }
+      return;
     }
-  }, [session, hasCompletedOnboarding, authLoading, onboardingLoading, segments]);
 
-  if (authLoading || onboardingLoading) {
+    // If authenticated, onboarding completed, AND Pro member -> allow access to main app
+    // But allow reset-password screen to stay visible
+    const inResetPassword = segments[0] === 'auth' && (segments as string[])[1] === 'reset-password';
+    if ((segments[0] === undefined || inAuth || inPaywall) && !inResetPassword) {
+      navigate('/(tabs)');
+    }
+  }, [session, hasCompletedOnboarding, authLoading, onboardingLoading, rcLoading, isProMember, segments]);
+
+  if (authLoading || onboardingLoading || rcLoading) {
     return (
       <View style={{ flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator color={COLORS.primary} />
@@ -102,7 +132,9 @@ export default function Layout() {
       <TracksProvider>
         <OnboardingProvider>
           <ProgressProvider>
-            <AppGate />
+            <RevenueCatProvider>
+              <AppGate />
+            </RevenueCatProvider>
           </ProgressProvider>
         </OnboardingProvider>
       </TracksProvider>
