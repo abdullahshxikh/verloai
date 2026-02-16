@@ -8,60 +8,28 @@
 
 /* Begin PBXBuildFile section */
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		2DCF206389EBC05A75E0AAB2 /* KeyboardRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0E3167CEA3482E727557510 /* KeyboardRootView.swift */; };
 		2EAC961D5BFB6E4D8C118F35 /* libPods-VerloAI.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 26458A76347A09C3F43323CC /* libPods-VerloAI.a */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		579773565014E31E934030E8 /* KeyboardViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 42480DB453760585CD38EF60 /* KeyboardViewController.swift */; };
-		969704DDFE492414DABA723F /* KeyboardViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63092FB51171E00150AB1FB9 /* KeyboardViewModel.swift */; };
-		B4FD26F7407D420629F25454 /* AuraAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F46C1F9BCEF7DB50A4C18639 /* AuraAnalyzer.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		CDF1070A2D284D1FBA7F8A83 /* VerloKeyboard.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = B26C0994D1ED365F054F96F6 /* VerloKeyboard.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
-		E0D28A3B828474D0ABCDF921 /* GhostScanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7CCF987AC3D049F0BA60EC3 /* GhostScanner.swift */; };
-		E1997FBC5D4A963353F4B123 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DA42101EA5B28F02DE5B2D69 /* Foundation.framework */; };
 		EE30DD1F22DB5983EB13B472 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 61274D48E2A13299FB1DD93F /* PrivacyInfo.xcprivacy */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
-		F904886691E41F04542C2A05 /* GroqClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2C7D1DF8EBA582A1A08362 /* GroqClient.swift */; };
 		FDDBDB6AB29D4F3AEE8AE225 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87AC8983E801BAA84E6C4FDD /* ExpoModulesProvider.swift */; };
 /* End PBXBuildFile section */
-
-/* Begin PBXCopyFilesBuildPhase section */
-		747712A8DB093292673A9492 /* Embed App Extensions */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 2147483647;
-			dstPath = "";
-			dstSubfolderSpec = 13;
-			files = (
-				CDF1070A2D284D1FBA7F8A83 /* VerloKeyboard.appex in Embed App Extensions */,
-			);
-			name = "Embed App Extensions";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		13B07F961A680F5B00A75B9A /* VerloAI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VerloAI.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = VerloAI/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = VerloAI/Info.plist; sourceTree = "<group>"; };
-		1A2C7D1DF8EBA582A1A08362 /* GroqClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GroqClient.swift; sourceTree = "<group>"; };
 		26458A76347A09C3F43323CC /* libPods-VerloAI.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-VerloAI.a"; sourceTree = BUILT_PRODUCTS_DIR; };
-		42480DB453760585CD38EF60 /* KeyboardViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeyboardViewController.swift; sourceTree = "<group>"; };
-		48A79B872E82CEFE05E95A75 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4D542A41EC1A12DC8CF6D997 /* Pods-VerloAI.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VerloAI.debug.xcconfig"; path = "Target Support Files/Pods-VerloAI/Pods-VerloAI.debug.xcconfig"; sourceTree = "<group>"; };
 		60CC7FE3081F18E7EDC914CE /* Pods-VerloAI.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-VerloAI.release.xcconfig"; path = "Target Support Files/Pods-VerloAI/Pods-VerloAI.release.xcconfig"; sourceTree = "<group>"; };
 		61274D48E2A13299FB1DD93F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; name = PrivacyInfo.xcprivacy; path = VerloAI/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		63092FB51171E00150AB1FB9 /* KeyboardViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeyboardViewModel.swift; sourceTree = "<group>"; };
-		7A3A30F7CA7840DD30952876 /* VerloKeyboard.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = VerloKeyboard.entitlements; sourceTree = "<group>"; };
 		87AC8983E801BAA84E6C4FDD /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-VerloAI/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = VerloAI/SplashScreen.storyboard; sourceTree = "<group>"; };
-		B26C0994D1ED365F054F96F6 /* VerloKeyboard.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = VerloKeyboard.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-		B7CCF987AC3D049F0BA60EC3 /* GhostScanner.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = GhostScanner.swift; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		DA42101EA5B28F02DE5B2D69 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
-		F0E3167CEA3482E727557510 /* KeyboardRootView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = KeyboardRootView.swift; sourceTree = "<group>"; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = VerloAI/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* VerloAI-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "VerloAI-Bridging-Header.h"; path = "VerloAI/VerloAI-Bridging-Header.h"; sourceTree = "<group>"; };
-		F46C1F9BCEF7DB50A4C18639 /* AuraAnalyzer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AuraAnalyzer.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -70,14 +38,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				2EAC961D5BFB6E4D8C118F35 /* libPods-VerloAI.a in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		A34FA129199AFACFD2BB83FA /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				E1997FBC5D4A963353F4B123 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -103,7 +63,6 @@
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
 				26458A76347A09C3F43323CC /* libPods-VerloAI.a */,
-				91E2DEF77DD24F3E0BA38C9A /* iOS */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -140,7 +99,6 @@
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				D799D40A5F56C0B235ADD314 /* Pods */,
 				418057F7B9AF4605B55F51A6 /* ExpoModulesProviders */,
-				B2B79525B70EC9BC7849E96F /* VerloKeyboard */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -151,33 +109,8 @@
 			isa = PBXGroup;
 			children = (
 				13B07F961A680F5B00A75B9A /* VerloAI.app */,
-				B26C0994D1ED365F054F96F6 /* VerloKeyboard.appex */,
 			);
 			name = Products;
-			sourceTree = "<group>";
-		};
-		91E2DEF77DD24F3E0BA38C9A /* iOS */ = {
-			isa = PBXGroup;
-			children = (
-				DA42101EA5B28F02DE5B2D69 /* Foundation.framework */,
-			);
-			name = iOS;
-			sourceTree = "<group>";
-		};
-		B2B79525B70EC9BC7849E96F /* VerloKeyboard */ = {
-			isa = PBXGroup;
-			children = (
-				1A2C7D1DF8EBA582A1A08362 /* GroqClient.swift */,
-				F46C1F9BCEF7DB50A4C18639 /* AuraAnalyzer.swift */,
-				F0E3167CEA3482E727557510 /* KeyboardRootView.swift */,
-				B7CCF987AC3D049F0BA60EC3 /* GhostScanner.swift */,
-				42480DB453760585CD38EF60 /* KeyboardViewController.swift */,
-				63092FB51171E00150AB1FB9 /* KeyboardViewModel.swift */,
-				48A79B872E82CEFE05E95A75 /* Info.plist */,
-				7A3A30F7CA7840DD30952876 /* VerloKeyboard.entitlements */,
-			);
-			name = VerloKeyboard;
-			path = VerloKeyboard;
 			sourceTree = "<group>";
 		};
 		BB2F792B24A3F905000567C9 /* Supporting */ = {
@@ -214,7 +147,6 @@
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
 				81D13262D63DC65F797C7605 /* [CP] Embed Pods Frameworks */,
-				747712A8DB093292673A9492 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
@@ -224,23 +156,6 @@
 			productName = VerloAI;
 			productReference = 13B07F961A680F5B00A75B9A /* VerloAI.app */;
 			productType = "com.apple.product-type.application";
-		};
-		E0B295EA050237622C5B231A /* VerloKeyboard */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 87DDA6737C4C14634E41C344 /* Build configuration list for PBXNativeTarget "VerloKeyboard" */;
-			buildPhases = (
-				7DAC05041854F901D4373851 /* Sources */,
-				A34FA129199AFACFD2BB83FA /* Frameworks */,
-				AE7BBC1AF30A57D01A932E45 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = VerloKeyboard;
-			productName = VerloKeyboard;
-			productReference = B26C0994D1ED365F054F96F6 /* VerloKeyboard.appex */;
-			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -253,11 +168,6 @@
 					13B07F861A680F5B00A75B9A = {
 						DevelopmentTeam = H6JRLFNGW6;
 						LastSwiftMigration = 1250;
-						ProvisioningStyle = Automatic;
-					};
-					E0B295EA050237622C5B231A = {
-						CreatedOnToolsVersion = 15.0;
-						DevelopmentTeam = H6JRLFNGW6;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -276,7 +186,6 @@
 			projectRoot = "";
 			targets = (
 				13B07F861A680F5B00A75B9A /* VerloAI */,
-				E0B295EA050237622C5B231A /* VerloKeyboard */,
 			);
 		};
 /* End PBXProject section */
@@ -290,13 +199,6 @@
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
 				EE30DD1F22DB5983EB13B472 /* PrivacyInfo.xcprivacy in Resources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		AE7BBC1AF30A57D01A932E45 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -444,19 +346,6 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		7DAC05041854F901D4373851 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				F904886691E41F04542C2A05 /* GroqClient.swift in Sources */,
-				B4FD26F7407D420629F25454 /* AuraAnalyzer.swift in Sources */,
-				2DCF206389EBC05A75E0AAB2 /* KeyboardRootView.swift in Sources */,
-				E0D28A3B828474D0ABCDF921 /* GhostScanner.swift in Sources */,
-				579773565014E31E934030E8 /* KeyboardViewController.swift in Sources */,
-				969704DDFE492414DABA723F /* KeyboardViewModel.swift in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
@@ -529,31 +418,6 @@
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				VERSIONING_SYSTEM = "apple-generic";
-			};
-			name = Release;
-		};
-		4D943AE60539F1EB2F9859E7 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				CODE_SIGN_ENTITLEMENTS = VerloKeyboard/VerloKeyboard.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = H6JRLFNGW6;
-				INFOPLIST_FILE = VerloKeyboard/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_RELEASE";
-				PRODUCT_BUNDLE_IDENTIFIER = com.saleemshaikh.verloai.keyboard;
-				PRODUCT_NAME = VerloKeyboard;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 5.0;
-				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -675,30 +539,6 @@
 			};
 			name = Release;
 		};
-		9021184C7998506AABCD1587 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CLANG_ENABLE_OBJC_WEAK = NO;
-				CODE_SIGN_ENTITLEMENTS = VerloKeyboard/VerloKeyboard.entitlements;
-				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
-				DEVELOPMENT_TEAM = H6JRLFNGW6;
-				INFOPLIST_FILE = VerloKeyboard/Info.plist;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-					"@executable_path/../../Frameworks",
-				);
-				OTHER_SWIFT_FLAGS = "$(inherited) -D EXPO_CONFIGURATION_DEBUG";
-				PRODUCT_BUNDLE_IDENTIFIER = com.saleemshaikh.verloai.keyboard;
-				PRODUCT_NAME = VerloKeyboard;
-				SDKROOT = iphoneos;
-				SKIP_INSTALL = YES;
-				SWIFT_VERSION = 5.0;
-			};
-			name = Debug;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -716,15 +556,6 @@
 			buildConfigurations = (
 				83CBBA201A601CBA00E9B192 /* Debug */,
 				83CBBA211A601CBA00E9B192 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		87DDA6737C4C14634E41C344 /* Build configuration list for PBXNativeTarget "VerloKeyboard" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				4D943AE60539F1EB2F9859E7 /* Release */,
-				9021184C7998506AABCD1587 /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
