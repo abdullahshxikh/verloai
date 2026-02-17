@@ -34,6 +34,14 @@ export function Navbar() {
                             Privacy Policy
                         </Link>
                         <Link
+                            href="/terms"
+                            className={`nav-link ${pathname === "/terms" ? "active" : ""
+                                }`}
+                            id="nav-terms"
+                        >
+                            Terms
+                        </Link>
+                        <Link
                             href="/contact"
                             className={`nav-link ${pathname === "/contact" ? "active" : ""}`}
                             id="nav-contact"
@@ -77,6 +85,9 @@ export function Navbar() {
                 </Link>
                 <Link href="/privacy-policy" onClick={() => setMenuOpen(false)}>
                     Privacy Policy
+                </Link>
+                <Link href="/terms" onClick={() => setMenuOpen(false)}>
+                    Terms
                 </Link>
                 <Link href="/contact" onClick={() => setMenuOpen(false)}>
                     Contact
