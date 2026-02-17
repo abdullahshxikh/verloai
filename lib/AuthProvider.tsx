@@ -19,6 +19,7 @@ interface AuthContextType {
     signInWithGoogle: () => Promise<{ error: any }>;
     signInWithApple: () => Promise<{ error: any }>;
     signOut: () => Promise<void>;
+    deleteAccount: () => Promise<{ error: any }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -205,8 +206,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await supabase.auth.signOut();
     };
 
+    const deleteAccount = async () => {
+        try {
+            // Call the secure RPC function to delete the user
+            const { error } = await supabase.rpc('delete_user_account');
+
+            if (error) {
+                console.error('Delete account RPC error:', error);
+                throw error;
+            }
+
+            // Sign out locally as well
+            await supabase.auth.signOut();
+            return { error: null };
+        } catch (error: any) {
+            console.error('Delete account error:', error);
+            return { error };
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ session, user, loading, signIn, signUp, signInWithGoogle, signInWithApple, signOut }}>
+        <AuthContext.Provider value={{ session, user, loading, signIn, signUp, signInWithGoogle, signInWithApple, signOut, deleteAccount }}>
             {children}
         </AuthContext.Provider>
     );

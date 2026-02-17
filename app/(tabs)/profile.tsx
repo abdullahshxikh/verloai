@@ -19,7 +19,7 @@ const GRAPH_HEIGHT = isSmall ? 130 : 160;
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user, signOut, deleteAccount } = useAuth();
   const { streak, xp, charismaScore, completedLevels, avatarUrl, fullName, updateProfile, charismaHistory, loadCharismaHistory, datingAvatarPreference, updateDatingPreference } = useProgress();
   const { isProMember } = useRevenueCat();
 
@@ -32,14 +32,44 @@ export default function ProfileScreen() {
   // Animation
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    loadCharismaHistory();
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 600,
-      useNativeDriver: true,
-    }).start();
-  }, []);
+  // ... (useEffects)
+
+  const handleLogout = () => {
+    Alert.alert("Log Out", "Are you sure you want to log out?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Log Out", style: "destructive", onPress: async () => {
+          await signOut();
+          router.replace('/auth/signin');
+        }
+      }
+    ]);
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      "Delete Account",
+      "Are you sure you want to delete your account? This action is permanent and cannot be undone. All your progress and data will be lost.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            setIsLoading(true);
+            const result = await deleteAccount();
+            setIsLoading(false);
+
+            if (result && result.error) {
+              Alert.alert("Error", "Failed to delete account. Please try again or contact support.");
+            } else {
+              router.replace('/auth/signin');
+            }
+          }
+        }
+      ]
+    );
+  };
 
   // Build graph data - ONLY use real history data, no mock/seed data
   const graphData = useMemo(() => {
@@ -143,17 +173,7 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleLogout = () => {
-    Alert.alert("Log Out", "Are you sure you want to log out?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Log Out", style: "destructive", onPress: async () => {
-          await signOut();
-          router.replace('/auth/signin');
-        }
-      }
-    ]);
-  };
+
 
   const displayName = fullName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Guest User';
   const initials = displayName.substring(0, 2).toUpperCase();
@@ -423,10 +443,16 @@ export default function ProfileScreen() {
 
         {/* Logout Button */}
         {user ? (
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <LogOut size={20} color={COLORS.error} />
-            <Text style={styles.logoutText}>Log Out</Text>
-          </TouchableOpacity>
+          <>
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <LogOut size={20} color={COLORS.error} />
+              <Text style={styles.logoutText}>Log Out</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.deleteAccountButton} onPress={handleDeleteAccount}>
+              <Text style={styles.deleteAccountText}>Delete Account</Text>
+            </TouchableOpacity>
+          </>
         ) : (
           <TouchableOpacity
             style={styles.signInButton}
@@ -786,6 +812,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: FONTS.bodyBold,
     color: COLORS.error,
+  },
+  deleteAccountButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: SPACING.s,
+    marginTop: -SPACING.m, // Pull it closer to logout
+    marginBottom: SPACING.xl,
+  },
+  deleteAccountText: {
+    fontSize: 14,
+    fontFamily: FONTS.body,
+    color: COLORS.textDim,
+    textDecorationLine: 'underline',
+    opacity: 0.6,
   },
   signInButton: {
     flexDirection: 'row',
