@@ -1,7 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, Modal, TextInput, Image, ActivityIndicator, Animated, Dimensions, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { User, Shield, LogOut, ChevronRight, Camera, X, Crown, Flame, Target, Trophy, TrendingUp, UserCircle, Mail, Heart } from 'lucide-react-native';
+import { User, Shield, LogOut, ChevronRight, Camera, X, Crown, Flame, Target, Trophy, TrendingUp, UserCircle, Mail, Heart, FileText } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import * as ImagePicker from 'expo-image-picker';
@@ -300,6 +300,19 @@ export default function ProfileScreen() {
                 <Shield size={20} color={COLORS.textDim} />
               </View>
               <Text style={styles.menuLabel}>Privacy Policy</Text>
+            </View>
+            <ChevronRight size={20} color={COLORS.textDim} />
+          </TouchableOpacity>
+
+          <View style={styles.menuDivider} />
+
+          {/* Terms of Service */}
+          <TouchableOpacity style={styles.menuRow} onPress={() => Linking.openURL('https://verloai.vercel.app/terms')}>
+            <View style={styles.menuLeft}>
+              <View style={[styles.menuIcon, { backgroundColor: 'rgba(108, 92, 231, 0.1)' }]}>
+                <FileText size={20} color={COLORS.textDim} />
+              </View>
+              <Text style={styles.menuLabel}>Terms of Service</Text>
             </View>
             <ChevronRight size={20} color={COLORS.textDim} />
           </TouchableOpacity>
