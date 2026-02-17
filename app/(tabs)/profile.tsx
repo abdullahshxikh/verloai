@@ -823,16 +823,18 @@ const styles = StyleSheet.create({
   deleteAccountButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    padding: SPACING.s,
-    marginTop: -SPACING.m, // Pull it closer to logout
+    padding: SPACING.m,
+    marginHorizontal: SPACING.l,
     marginBottom: SPACING.xl,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 118, 117, 0.25)',
+    backgroundColor: 'rgba(255, 118, 117, 0.08)',
   },
   deleteAccountText: {
-    fontSize: 14,
-    fontFamily: FONTS.body,
-    color: COLORS.textDim,
-    textDecorationLine: 'underline',
-    opacity: 0.6,
+    fontSize: 16,
+    fontFamily: FONTS.bodyBold,
+    color: COLORS.error,
   },
   signInButton: {
     flexDirection: 'row',
