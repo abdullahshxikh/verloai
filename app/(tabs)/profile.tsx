@@ -32,7 +32,14 @@ export default function ProfileScreen() {
   // Animation
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  // ... (useEffects)
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
+    loadCharismaHistory();
+  }, []);
 
   const handleLogout = () => {
     Alert.alert("Log Out", "Are you sure you want to log out?", [
