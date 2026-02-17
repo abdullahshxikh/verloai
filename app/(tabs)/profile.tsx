@@ -294,7 +294,7 @@ export default function ProfileScreen() {
           <View style={styles.menuDivider} />
 
           {/* Privacy Policy */}
-          <TouchableOpacity style={styles.menuRow} onPress={() => Linking.openURL('https://verloai.com/privacy')}>
+          <TouchableOpacity style={styles.menuRow} onPress={() => Linking.openURL('https://verloai.vercel.app/privacy-policy')}>
             <View style={styles.menuLeft}>
               <View style={[styles.menuIcon, { backgroundColor: 'rgba(108, 92, 231, 0.1)' }]}>
                 <Shield size={20} color={COLORS.textDim} />
