@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { TrendingUp, CheckCircle, ArrowRight, Clock } from 'lucide-react-native';
 import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useEffect } from 'react';
 import { COLORS, FONTS, SPACING } from '../constants/theme';
 import { CharismaAnalysis } from '../services/inworld';
 
@@ -29,6 +31,12 @@ export default function ProjectionScreen() {
     // Logic for projection — always show potential in 90+ range to motivate
     const projectedScore = Math.min(99, Math.max(92, score + (timeInvestment * 2) + 20));
     const improvement = Math.round(projectedScore - score);
+
+    // Persist scores so the paywall can reference them
+    useEffect(() => {
+        AsyncStorage.setItem('onboarding_charisma_score', score.toString()).catch(() => {});
+        AsyncStorage.setItem('onboarding_projected_score', Math.round(projectedScore).toString()).catch(() => {});
+    }, [score, projectedScore]);
 
     const benefits = [
         "Command respect in every meeting",

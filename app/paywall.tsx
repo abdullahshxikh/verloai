@@ -3,7 +3,8 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Check, Crown } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, FONTS, SPACING } from '../constants/theme';
 import { useOnboarding } from '../lib/OnboardingProvider';
 import { useRevenueCat } from '../lib/RevenueCatProvider';
@@ -16,16 +17,31 @@ export default function PaywallScreen() {
   // const offering = offerings?.all['experiment_group'] || offerings?.current;
   const offering = offerings?.current;
   const [purchasing, setPurchasing] = useState(false);
+  const [charismaScore, setCharismaScore] = useState<number | null>(null);
+  const [projectedScore, setProjectedScore] = useState<number | null>(null);
 
-  // Auto-select monthly as default (best value for the user)
+  useEffect(() => {
+    AsyncStorage.getItem('onboarding_charisma_score').then(val => {
+      if (val) setCharismaScore(parseInt(val, 10));
+    });
+    AsyncStorage.getItem('onboarding_projected_score').then(val => {
+      if (val) setProjectedScore(parseInt(val, 10));
+    });
+  }, []);
+
+  // Auto-select yearly as default (best value for the user)
   const availablePackages = offering?.availablePackages || [];
   const [selectedPackage, setSelectedPackage] = useState<string>(
-    availablePackages.find(p => p.identifier === '$rc_monthly')?.identifier ||
-    availablePackages[0]?.identifier || '$rc_monthly'
+    availablePackages.find(p => p.identifier === '$rc_weekly')?.identifier ||
+    availablePackages[0]?.identifier || '$rc_weekly'
   );
 
+  const scoreText = charismaScore && projectedScore
+    ? `Reach ${projectedScore} from your ${charismaScore} in 30 days`
+    : "Reach your full charisma potential in 30 days";
+
   const features = [
-    { text: "Unlimited AI conversations", pro: true },
+    { text: scoreText, pro: true },
     { text: "Advanced scenarios (Conflict, Dating)", pro: true },
     { text: "Deep skill breakdown & drills", pro: true },
     { text: "Personalized AI coaching", pro: true },
@@ -178,7 +194,7 @@ export default function PaywallScreen() {
           <View style={styles.packagesContainer}>
             {availablePackages.map((pkg, index) => {
               const isSelected = selectedPackage === pkg.identifier;
-              const isPopular = pkg.identifier === '$rc_monthly';
+              const isPopular = pkg.identifier === '$rc_weekly';
               const isYearly = pkg.identifier === '$rc_weekly';
 
               // Display "Yearly" for the weekly package slot
@@ -349,7 +365,7 @@ const styles = StyleSheet.create({
   popularBadge: {
     position: 'absolute',
     top: -8,
-    right: 16,
+    left: 16,
     backgroundColor: COLORS.accent,
     paddingHorizontal: 12,
     paddingVertical: 4,
