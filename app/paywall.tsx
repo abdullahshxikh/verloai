@@ -35,7 +35,7 @@ export default function PaywallScreen() {
   // Helper: get human-readable period label
   const getPackagePeriod = (identifier: string) => {
     switch (identifier) {
-      case '$rc_weekly': return '/ week';
+      case '$rc_weekly': return '/ year';
       case '$rc_monthly': return '/ month';
       case '$rc_annual': return '/ year';
       case '$rc_lifetime': return 'one-time';
@@ -110,7 +110,7 @@ export default function PaywallScreen() {
 
   const handleRestore = async () => {
     setPurchasing(true);
-    const { customerInfo, error } = await restorePurchases();
+    const { customerInfo: restoredInfo, error } = await restorePurchases();
     setPurchasing(false);
 
     if (error) {
@@ -118,11 +118,21 @@ export default function PaywallScreen() {
       return;
     }
 
-    if (customerInfo) {
-      Alert.alert('Restored!', 'Your purchases have been restored');
-      if (isProMember) {
-        await completeOnboarding();
-        router.replace('/(tabs)');
+    if (restoredInfo) {
+      // Check the returned customerInfo directly instead of stale isProMember state
+      const hasPro = typeof restoredInfo.entitlements.active['Verlo ai Pro'] !== 'undefined';
+      if (hasPro) {
+        Alert.alert('Restored!', 'Your purchases have been restored', [
+          {
+            text: 'Continue',
+            onPress: async () => {
+              await completeOnboarding();
+              router.replace('/(tabs)');
+            },
+          },
+        ]);
+      } else {
+        Alert.alert('No Active Subscription', 'No active Pro subscription was found to restore.');
       }
     }
   };
@@ -169,6 +179,12 @@ export default function PaywallScreen() {
             {availablePackages.map((pkg, index) => {
               const isSelected = selectedPackage === pkg.identifier;
               const isPopular = pkg.identifier === '$rc_monthly';
+              const isYearly = pkg.identifier === '$rc_weekly';
+
+              // Display "Yearly" for the weekly package slot
+              const displayTitle = isYearly
+                ? 'Yearly'
+                : (pkg.product.title || pkg.identifier.replace('$rc_', '').charAt(0).toUpperCase() + pkg.identifier.replace('$rc_', '').slice(1));
 
               return (
                 <TouchableOpacity
@@ -181,12 +197,17 @@ export default function PaywallScreen() {
                       <Text style={styles.popularText}>BEST VALUE</Text>
                     </View>
                   )}
+                  {isYearly && (
+                    <View style={styles.discountBadge}>
+                      <Text style={styles.discountText}>60% OFF</Text>
+                    </View>
+                  )}
                   <View style={styles.packageHeader}>
                     <View style={styles.radioOuter}>
                       {isSelected && <View style={styles.radioInner} />}
                     </View>
                     <View style={styles.packageInfo}>
-                      <Text style={styles.packageTitle}>{pkg.product.title || pkg.identifier.replace('$rc_', '').charAt(0).toUpperCase() + pkg.identifier.replace('$rc_', '').slice(1)}</Text>
+                      <Text style={styles.packageTitle}>{displayTitle}</Text>
                       <Text style={styles.packagePrice}>
                         {pkg.product.priceString} {getPackagePeriod(pkg.identifier)}
                       </Text>
@@ -338,6 +359,21 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontFamily: FONTS.bodyBold,
     color: COLORS.background,
+    letterSpacing: 0.5,
+  },
+  discountBadge: {
+    position: 'absolute',
+    top: -8,
+    right: 16,
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  discountText: {
+    fontSize: 10,
+    fontFamily: FONTS.bodyBold,
+    color: '#FFFFFF',
     letterSpacing: 0.5,
   },
   packageHeader: {
