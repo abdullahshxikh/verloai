@@ -194,7 +194,6 @@ export default function PaywallScreen() {
           <View style={styles.packagesContainer}>
             {availablePackages.map((pkg, index) => {
               const isSelected = selectedPackage === pkg.identifier;
-              const isPopular = pkg.identifier === '$rc_weekly';
               const isYearly = pkg.identifier === '$rc_weekly';
 
               // Display "Yearly" for the weekly package slot
@@ -208,11 +207,6 @@ export default function PaywallScreen() {
                   style={[styles.packageCard, isSelected && styles.packageCardSelected]}
                   onPress={() => setSelectedPackage(pkg.identifier)}
                 >
-                  {isPopular && (
-                    <View style={styles.popularBadge}>
-                      <Text style={styles.popularText}>BEST VALUE</Text>
-                    </View>
-                  )}
                   {isYearly && (
                     <View style={styles.discountBadge}>
                       <Text style={styles.discountText}>60% OFF</Text>
