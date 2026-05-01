@@ -14,7 +14,7 @@ export default function HomePage() {
             <span className="highlight">Communication</span>
           </h1>
           <p className="hero-description">
-            Verlo AI is your personal AI coach that helps you build real-world
+            Conversable is your personal AI coach that helps you build real-world
             charisma. Practice voice conversations, get instant feedback, and
             track your growth — all from your phone.
           </p>
@@ -48,7 +48,7 @@ export default function HomePage() {
           <div className="feature-image-wrap">
             <Image
               src="/ai convos.png"
-              alt="Verlo AI voice conversation interface"
+              alt="Conversable voice conversation interface"
               width={600}
               height={1067}
               style={{ borderRadius: "var(--radius-xl)" }}
@@ -86,7 +86,7 @@ export default function HomePage() {
           <div className="feature-image-wrap">
             <Image
               src="/Charisma score.png"
-              alt="Verlo AI charisma score breakdown"
+              alt="Conversable charisma score breakdown"
               width={600}
               height={1067}
               style={{ borderRadius: "var(--radius-xl)" }}
@@ -123,7 +123,7 @@ export default function HomePage() {
           <div className="feature-image-wrap">
             <Image
               src="/Home page with learning track and scenarios.png"
-              alt="Verlo AI home screen with structured learning levels"
+              alt="Conversable home screen with structured learning levels"
               width={600}
               height={1067}
               style={{ borderRadius: "var(--radius-xl)" }}
@@ -160,7 +160,7 @@ export default function HomePage() {
           <div className="feature-image-wrap">
             <Image
               src="/freestyle mode.png"
-              alt="Verlo AI freestyle conversation mode"
+              alt="Conversable freestyle conversation mode"
               width={600}
               height={1067}
               style={{ borderRadius: "var(--radius-xl)" }}

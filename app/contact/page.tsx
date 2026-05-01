@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Contact Us – Verlo AI",
+    title: "Contact Us – Conversable",
     description:
-        "Get in touch with the Verlo AI team. Reach out for questions, feedback, or support.",
+        "Get in touch with the Conversable team. Reach out for questions, feedback, or support.",
 };
 
 export default function ContactPage() {
@@ -27,8 +27,8 @@ export default function ContactPage() {
                         Send us an email directly and we&apos;ll respond within 24 hours.
                     </p>
                     <p>
-                        <a href="mailto:verloai456@gmail.com">
-                            verloai456@gmail.com
+                        <a href="mailto:conversable456@gmail.com">
+                            conversable456@gmail.com
                         </a>
                     </p>
                     <div className="contact-response-badge">
@@ -45,8 +45,8 @@ export default function ContactPage() {
                         account deletion? We take your privacy seriously.
                     </p>
                     <p>
-                        <a href="mailto:verloai456@gmail.com">
-                            verloai456@gmail.com
+                        <a href="mailto:conversable456@gmail.com">
+                            conversable456@gmail.com
                         </a>
                     </p>
                     <div className="contact-response-badge">

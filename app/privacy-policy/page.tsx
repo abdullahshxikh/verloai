@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Privacy Policy – Verlo AI",
+    title: "Privacy Policy – Conversable",
     description:
-        "Read the Verlo AI Privacy Policy. Learn how we collect, use, and protect your personal information when using our AI communication coaching app.",
+        "Read the Conversable Privacy Policy. Learn how we collect, use, and protect your personal information when using our AI communication coaching app.",
 };
 
 export default function PrivacyPolicyPage() {
@@ -13,7 +13,7 @@ export default function PrivacyPolicyPage() {
                 <div className="page-badge">🔒 Legal</div>
                 <h1 className="page-title">Privacy Policy</h1>
                 <p className="page-subtitle">
-                    Your privacy matters to us. This policy explains how Verlo AI collects,
+                    Your privacy matters to us. This policy explains how Conversable collects,
                     uses, stores, and protects your personal information.
                 </p>
                 <p className="page-last-updated">Last updated: February 16, 2026</p>
@@ -92,7 +92,7 @@ export default function PrivacyPolicyPage() {
                     <div className="policy-section-number">1</div>
                     <h2>Introduction</h2>
                     <p>
-                        Welcome to Verlo AI (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). Verlo AI is an
+                        Welcome to Conversable (&quot;we,&quot; &quot;our,&quot; or &quot;us&quot;). Conversable is an
                         AI-powered communication coaching application designed to help you
                         improve your social and conversational skills through interactive voice
                         practice, assessments, and personalized feedback.
@@ -414,10 +414,10 @@ export default function PrivacyPolicyPage() {
                     <p>
                         To exercise any of these rights, please contact us at{" "}
                         <a
-                            href="mailto:verloai456@gmail.com"
+                            href="mailto:conversable456@gmail.com"
                             style={{ color: "var(--text-accent)", fontWeight: 600 }}
                         >
-                            verloai456@gmail.com
+                            conversable456@gmail.com
                         </a>
                         . We will respond to your request within 30 days.
                     </p>
@@ -492,10 +492,10 @@ export default function PrivacyPolicyPage() {
                         If you are a parent or guardian and believe your child has provided us
                         with personal information, please contact us at{" "}
                         <a
-                            href="mailto:verloai456@gmail.com"
+                            href="mailto:conversable456@gmail.com"
                             style={{ color: "var(--text-accent)", fontWeight: 600 }}
                         >
-                            verloai456@gmail.com
+                            conversable456@gmail.com
                         </a>{" "}
                         so we can take appropriate action.
                     </p>
@@ -589,10 +589,10 @@ export default function PrivacyPolicyPage() {
                         <li>
                             <strong>Email:</strong>{" "}
                             <a
-                                href="mailto:verloai456@gmail.com"
+                                href="mailto:conversable456@gmail.com"
                                 style={{ color: "var(--text-accent)", fontWeight: 600 }}
                             >
-                                verloai456@gmail.com
+                                conversable456@gmail.com
                             </a>
                         </li>
                         <li>

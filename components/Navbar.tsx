@@ -14,7 +14,7 @@ export function Navbar() {
                 <div className="nav-inner">
                     <Link href="/" className="nav-logo" id="nav-logo">
                         <span className="nav-logo-icon">V</span>
-                        Verlo AI
+                        Conversable
                     </Link>
 
                     <div className="nav-links" id="nav-links">
